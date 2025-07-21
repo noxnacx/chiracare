@@ -13,68 +13,273 @@ class HospitalAppointmentController extends Controller
     // แสดงรายการที่มีสถานะ 'sent'
     public function sentAppointments(Request $request)
     {
-        // รับค่าจาก query string
         $status = $request->input('status', 'sent');
         $date = $request->input('date');
         $caseType = $request->input('case_type');
         $rotationId = $request->input('rotation_id');
         $trainingUnitId = $request->input('training_unit_id');
+        $todayStatus = $request->input('today_status');
 
-        // เริ่ม query หลักจาก MedicalReport
-        $query = MedicalReport::query();
+        // ✅ ถ้าเป็นกรณี today-status ให้แยกโครงสร้างต่างหาก
+        if ($status === 'today-status') {
+            $targetDate = $date ?: now()->toDateString();
 
-        // 🔎 Filter ตามสถานะ
-        if ($status === 'sent') {
-            $query->where('status', 'sent');
-        }
+            $query = MedicalReport::query();
 
-        if (in_array($status, ['scheduled', 'missed'])) {
-            $query->whereHas('appointment', function ($q) use ($status) {
-                $q->where('status', $status);
-            });
-
-            // ✅ กรองตามวันที่ (appointment_date)
-            if ($date) {
-                $query->whereHas('appointment', function ($q) use ($date) {
-                    $q->whereDate('appointment_date', $date);
+            // ✅ ปรับเงื่อนไข: ค้นหาทั้งวันที่นัดและวันที่ขาดนัด
+            $query->whereHas('appointment', function ($q) use ($targetDate, $caseType) {
+                $q->where(function ($subQuery) use ($targetDate) {
+                    // ค้นหาการนัดหมายที่มีวันที่ตรงกับ targetDate
+                    $subQuery->whereDate('appointment_date', $targetDate)
+                        // หรือมีการขาดนัดในวันที่ targetDate
+                        ->orWhere(function ($missedQuery) use ($targetDate) {
+                            $missedQuery->where('was_missed', 1)
+                                ->whereDate('missed_appointment_date', $targetDate);
+                        });
                 });
-            }
 
-            // ✅ กรองตามประเภทเคส (normal/critical)
-            if ($caseType && $caseType !== 'all') {
-                $query->whereHas('appointment', function ($q) use ($caseType) {
+                if ($caseType && $caseType !== 'all') {
                     $q->where('case_type', $caseType);
+                }
+            });
+
+            if ($rotationId) {
+                $query->whereHas('soldier.rotation', function ($q) use ($rotationId) {
+                    $q->where('id', $rotationId);
                 });
             }
+
+            if ($trainingUnitId) {
+                $query->whereHas('soldier', function ($q) use ($trainingUnitId) {
+                    $q->where('training_unit_id', $trainingUnitId);
+                });
+            }
+
+            $reports = $query->with(['appointment.checkin.treatment', 'soldier.trainingUnit', 'soldier.rotation'])->get();
+
+            // ✅ อัปเดตการกรองสถานะ
+            if ($todayStatus && $todayStatus !== 'all') {
+                $reports = $reports->filter(function ($report) use ($todayStatus, $targetDate) {
+                    $a = $report->appointment;
+                    $c = $a->checkin ?? null;
+                    $t = $c->treatment ?? null;
+
+                    if (!$a)
+                        return false;
+
+                    // ✅ ตรวจสอบว่าวันที่กำลังดูเป็นวันไหน
+                    $viewingDate = $targetDate;
+                    $appointmentDate = \Carbon\Carbon::parse($a->appointment_date)->format('Y-m-d');
+                    $hasMissed = $a->was_missed && $a->missed_appointment_date;
+                    $missedDate = $hasMissed ? \Carbon\Carbon::parse($a->missed_appointment_date)->format('Y-m-d') : null;
+
+                    $isViewingMissedDate = $hasMissed && ($viewingDate === $missedDate);
+                    $isViewingAppointmentDate = ($viewingDate === $appointmentDate);
+
+                    // ✅ กำหนดสถานะตามวันที่ที่กำลังดู
+                    if ($isViewingMissedDate) {
+                        $status = 'ไม่มาตามนัด (นัดหมายใหม่แล้ว)';
+                    } elseif ($isViewingAppointmentDate) {
+                        // สถานะตามการรักษาจริง
+                        if ($a->status === 'scheduled' && optional($c)->checkin_status === 'not-checked-in') {
+                            $status = 'ยังไม่ได้ทำการรักษา';
+                        } elseif ($a->status === 'scheduled' && optional($c)->checkin_status === 'checked-in' && optional($t)->treatment_status === 'not-treated') {
+                            $status = 'อยู่ระหว่างการรักษา';
+                        } elseif ($a->status === 'completed' && optional($c)->checkin_status === 'checked-in' && optional($t)->treatment_status === 'treated') {
+                            $status = 'รักษาสำเร็จ';
+                        } elseif ($a->status === 'missed') {
+                            $status = 'ไม่มาตามนัด';
+                        } else {
+                            $status = 'ยังไม่ได้ทำการรักษา'; // ค่าเริ่มต้นสำหรับวันนัดใหม่
+                        }
+                    } else {
+                        // วันอื่นๆ - สถานะปกติ
+                        if ($a->status === 'scheduled' && optional($c)->checkin_status === 'not-checked-in') {
+                            $status = 'ยังไม่ได้ทำการรักษา';
+                        } elseif ($a->status === 'scheduled' && optional($c)->checkin_status === 'checked-in' && optional($t)->treatment_status === 'not-treated') {
+                            $status = 'อยู่ระหว่างการรักษา';
+                        } elseif ($a->status === 'completed' && optional($c)->checkin_status === 'checked-in' && optional($t)->treatment_status === 'treated') {
+                            $status = 'รักษาสำเร็จ';
+                        } elseif ($a->status === 'missed') {
+                            $status = 'ไม่มาตามนัด';
+                        } else {
+                            $status = 'ไม่ทราบสถานะ';
+                        }
+                    }
+
+                    return $status === $todayStatus;
+                });
+            }
+
+            $medicalReports = $reports;
+            $selectedDate = $targetDate;
+
+        } else {
+            // 🔎 สำหรับ status อื่น (sent, scheduled, missed, scheduledComplete, todaymakeappointmenttoday)
+            $query = MedicalReport::query();
+
+            if ($status === 'sent') {
+                $query->where('status', 'sent');
+            }
+
+            // ✅ รองรับ scheduled - แสดงทุกวันหรือกรองตามวันที่
+            if ($status === 'scheduled') {
+                $query->whereHas('appointment', function ($q) use ($date) {
+                    $q->where('status', 'scheduled');
+
+                    if ($date) {
+                        $q->whereDate('appointment_date', $date);
+                    }
+                    // ลบเงื่อนไข whereDate แบบบังคับ เพื่อให้แสดงทุกวัน
+                });
+
+                if ($caseType && $caseType !== 'all') {
+                    $query->whereHas('appointment', function ($q) use ($caseType) {
+                        $q->where('case_type', $caseType);
+                    });
+                }
+            }
+
+            // ✅ แก้ไข scheduledComplete แบบ Debug
+            if ($status === 'scheduledComplete') {
+                // ✅ ขั้นตอนที่ 1: ดึงข้อมูลทั้งหมดก่อน (ไม่กรองวันที่)
+                $query->whereHas('appointment', function ($q) use ($caseType) {
+                    $q->whereIn('status', ['scheduled', 'completed', 'missed']);
+
+                    if ($caseType && $caseType !== 'all') {
+                        $q->where('case_type', $caseType);
+                    }
+                });
+
+                // ✅ เพิ่มเงื่อนไข: ไม่รวม status 'in ER' ใน medical_report table
+                $query->whereNotIn('status', ['in ER']);
+
+                if ($rotationId) {
+                    $query->whereHas('soldier.rotation', function ($q) use ($rotationId) {
+                        $q->where('id', $rotationId);
+                    });
+                }
+
+                if ($trainingUnitId) {
+                    $query->whereHas('soldier', function ($q) use ($trainingUnitId) {
+                        $q->where('training_unit_id', $trainingUnitId);
+                    });
+                }
+
+                // ✅ ขั้นตอนที่ 2: ดึงข้อมูลทั้งหมด
+                $allReports = $query->with([
+                    'soldier',
+                    'soldier.trainingUnit',
+                    'soldier.rotation',
+                    'appointment',
+                    'vitalSign'
+                ])->get();
+
+                // ✅ ขั้นตอนที่ 3: กรองวันที่ใน PHP
+                $targetDate = $date ?: now()->toDateString();
+
+                $filteredReports = $allReports->filter(function ($report) use ($targetDate) {
+                    if (!$report->appointment)
+                        return false;
+
+                    $appointmentDate = \Carbon\Carbon::parse($report->appointment->appointment_date)->format('Y-m-d');
+                    $hasMissed = $report->appointment->was_missed && $report->appointment->missed_appointment_date;
+                    $missedDate = $hasMissed ? \Carbon\Carbon::parse($report->appointment->missed_appointment_date)->format('Y-m-d') : null;
+
+                    // ✅ แสดงถ้าตรงกับวันนัดหมายหรือวันขาดนัด
+                    return ($appointmentDate === $targetDate) || ($hasMissed && $missedDate === $targetDate);
+                });
+
+                $medicalReports = $filteredReports;
+
+                // ✅ Debug Log
+                \Log::info('ScheduledComplete Debug', [
+                    'total_reports' => $allReports->count(),
+                    'filtered_reports' => $filteredReports->count(),
+                    'target_date' => $targetDate,
+                    'date_param' => $date,
+                    'sample_appointment_dates' => $allReports->take(5)->map(function ($r) {
+                        return [
+                            'appointment_date' => $r->appointment ? $r->appointment->appointment_date : null,
+                            'missed_date' => $r->appointment && $r->appointment->missed_appointment_date ? $r->appointment->missed_appointment_date : null,
+                            'was_missed' => $r->appointment ? $r->appointment->was_missed : null
+                        ];
+                    })
+                ]);
+            }
+            // ✅ รองรับ missed
+            if ($status === 'missed') {
+                $query->whereHas('appointment', function ($q) use ($status, $date) {
+                    $q->where('status', $status);
+
+                    if ($date) {
+                        $q->whereDate('appointment_date', $date);
+                    }
+                });
+
+                if ($caseType && $caseType !== 'all') {
+                    $query->whereHas('appointment', function ($q) use ($caseType) {
+                        $q->where('case_type', $caseType);
+                    });
+                }
+            }
+
+            // ✅ รองรับ todaymakeappointmenttoday
+            if ($status === 'todaymakeappointmenttoday') {
+                $query->whereHas('appointment', function ($q) use ($date) {
+                    if ($date) {
+                        $q->whereDate('created_at', $date);
+                    } else {
+                        $today = now()->toDateString();
+                        $q->whereDate('created_at', $today);
+                    }
+                });
+
+                if ($caseType && $caseType !== 'all') {
+                    $query->whereHas('appointment', function ($q) use ($caseType) {
+                        $q->where('case_type', $caseType);
+                    });
+                }
+            }
+
+            // กรองตาม rotation
+            if ($rotationId) {
+                $query->whereHas('soldier.rotation', function ($q) use ($rotationId) {
+                    $q->where('id', $rotationId);
+                });
+            }
+
+            // กรองตาม training unit
+            if ($trainingUnitId) {
+                $query->whereHas('soldier', function ($q) use ($trainingUnitId) {
+                    $q->where('training_unit_id', $trainingUnitId);
+                });
+            }
+
+            $medicalReports = $query->with([
+                'soldier',
+                'soldier.trainingUnit',
+                'soldier.rotation',
+                'appointment',
+                'vitalSign'
+            ])->get();
         }
 
-        // 🔎 กรองตามผลัด (rotation)
-        if ($rotationId) {
-            $query->whereHas('soldier.rotation', function ($q) use ($rotationId) {
-                $q->where('id', $rotationId);
-            });
-        }
-
-        // 🔎 กรองตามหน่วยฝึก
-        if ($trainingUnitId) {
-            $query->whereHas('soldier', function ($q) use ($trainingUnitId) {
-                $q->where('training_unit_id', $trainingUnitId);
-            });
-        }
-
-        // โหลดข้อมูลความสัมพันธ์ที่จำเป็น
-        $medicalReports = $query->with([
-            'soldier',
-            'soldier.trainingUnit',
-            'soldier.rotation',
-            'appointment'
-        ])->get();
-
-        // ดึงข้อมูล dropdown
         $rotations = Rotation::all();
         $trainingUnits = TrainingUnit::all();
 
-        // ส่งไปที่ view
+        // ✅ Debug Log
+        \Log::info('Appointment Filter Debug', [
+            'status' => $status,
+            'date' => $date,
+            'case_type' => $caseType,
+            'rotation_id' => $rotationId,
+            'training_unit_id' => $trainingUnitId,
+            'today_status' => $todayStatus,
+            'results_count' => $medicalReports->count(),
+            'target_date' => $targetDate ?? 'N/A'
+        ]);
+
         return view('admin-hospital.approved_appointment', compact(
             'medicalReports',
             'rotations',

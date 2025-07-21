@@ -203,162 +203,186 @@
             <div class="content-header">
                 <div class="container-fluid">
                     <div class="container">
-
-                        <!-- เพิ่มส่วนตัวกรอง -->
-                        <div class="filter-container no-print">
-                            <h4>ตัวกรองข้อมูล</h4>
-                            <form id="reportFilterForm" method="GET" action="">
-                                <div class="filter-row">
-                                    <div class="filter-group">
-                                        <label for="startDate">วันที่เริ่มต้น</label>
-                                        <input type="date" id="startDate" name="start_date" class="form-control"
-                                            value="{{ request('start_date', now()->subDays(30)->format('Y-m-d')) }}">
-                                    </div>
-
-                                    <div class="filter-group">
-                                        <label for="endDate">วันที่สิ้นสุด</label>
-                                        <input type="date" id="endDate" name="end_date" class="form-control"
-                                            value="{{ request('end_date', now()->format('Y-m-d')) }}">
-                                    </div>
-
-                                    <div class="filter-group">
-                                        <label for="department">แผนก</label>
-                                        <select id="department" name="department" class="form-control">
-                                            <option value="">ทั้งหมด</option>
-                                            <option value="opd" {{ request('department') == 'opd' ? 'selected' : '' }}>OPD
-                                            </option>
-                                            <option value="ipd" {{ request('department') == 'ipd' ? 'selected' : '' }}>IPD
-                                            </option>
-                                            <option value="er" {{ request('department') == 'er' ? 'selected' : '' }}>ER
-                                            </option>
-                                        </select>
-                                    </div>
-
-                                    <div class="filter-group">
-                                        <label for="status">สถานะ</label>
-                                        <select id="status" name="status" class="form-control">
-                                            <option value="">ทั้งหมด</option>
-                                            <option value="admit" {{ request('status') == 'admit' ? 'selected' : '' }}>
-                                                Admit</option>
-                                            <option value="refer" {{ request('status') == 'refer' ? 'selected' : '' }}>
-                                                Refer</option>
-                                            <option value="discharged" {{ request('status') == 'discharged' ? 'selected' : '' }}>Discharged</option>
-                                            <option value="followup" {{ request('status') == 'followup' ? 'selected' : '' }}>Followup</option>
-                                        </select>
-                                    </div>
+                        <div class="container-wrapper">
+                            <div class="header-controls no-print">
+                                <div class="stat-text">
+                                    สถิติและรายงาน
                                 </div>
-
-                                <div class="filter-row mt-3">
-                                    <div class="filter-btn-group">
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-filter"></i> กรองข้อมูล
-                                        </button>
-                                        <button type="button" class="btn btn-secondary" onclick="resetFilter()">
-                                            <i class="fas fa-redo"></i> ล้างตัวกรอง
-                                        </button>
-                                        <button type="button" class="btn btn-success" onclick="printReport()">
-                                            <i class="fas fa-print"></i> พิมพ์รายงาน
-                                        </button>
-                                        <button type="button" class="btn btn-danger" onclick="exportToPDF()">
-                                            <i class="fas fa-file-pdf"></i> ส่งออก PDF
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-
-                        <div class="container">
-
-                            <div class="container-wrapper">
-
-
-                                <div class="header">
-                                    <h2 style="font-size: 20px;">แบบรายงานการรักษาผู้ป่วย</h2>
-                                    <p style="font-size: 16px;">ผลการรักษาประวัติ วันที่ 27 เดือน มิถุนายน พ.ศ. 2567
-                                    </p>
-                                </div>
-
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-striped">
-                                        <thead class="thead-light">
-                                            <tr>
-                                                <th style="width: 5%;">ลำดับ</th>
-                                                <th style="width: 15%;">ชื่อ-สกุล</th>
-                                                <th style="width: 12%;">หน่วยงาน</th>
-                                                <th style="width: 10%;">หมอ</th>
-                                                <th style="width: 12%;">อาการ</th>
-                                                <th style="width: 18%;">การวินิจฉัยโรค</th>
-                                                <th style="width: 10%;">แพทย์</th>
-                                                <th style="width: 8%;">สถานการณ์จำแนก</th>
-                                                <th style="width: 10%;">F/U</th>
-                                                <th style="width: 10%;">ประเภทติดตาม</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>1</td>
-                                                <td>พลทหาร ภูริชัย สาระสิทธิ์</td>
-                                                <td>พล.พัน 3 ค่ายวาเล่</td>
-                                                <td>พ.ท.พลอย</td>
-                                                <td>ปวดข้อเข่า ข้อเท้า</td>
-                                                <td>Z480 [Attention to surgical dressing and sutures
-                                                    การดูแลแผลผ่าตัดและเย็บแผล]
-                                                </td>
-                                                <td>พ.ท.พลอย</td>
-                                                <td>D/C</td>
-                                                <td>28.06.67 (13:00)</td>
-                                                <td>คัดได้ตามปกติ</td>
-                                            </tr>
-                                            <tr>
-                                                <td>2</td>
-                                                <td>พลทหาร ธนทัต ศรีพัฒนโชติ</td>
-                                                <td>มทบ.31</td>
-                                                <td>พ.ท.จิรพงษ์</td>
-                                                <td>บวม บริเวณข้อเท้า บริเวณแขน</td>
-                                                <td>L029 [Cutaneous abscess, furuncle and carbuncle of skin,
-                                                    unspecified]
-                                                </td>
-                                                <td>พ.ท.จิรพงษ์</td>
-                                                <td>D/C</td>
-                                                <td>4 ก.ค. 67 (08:00)</td>
-                                                <td>คัดได้ตามปกติ</td>
-                                            </tr>
-                                            <tr>
-                                                <td>3</td>
-                                                <td>พลทหาร กฤษฎา บุญพาณิชย์</td>
-                                                <td>มทบ.31</td>
-                                                <td>พ.ท.ณัฐพล</td>
-                                                <td>มีไข้ เจ็บคอ</td>
-                                                <td>J029 [ลำไส้อักเสบจาก Acute pharyngitis]</td>
-                                                <td>พ.ท.ณัฐพล</td>
-                                                <td>D/C</td>
-                                                <td>5 พ.ย. 67 (08:00)</td>
-                                                <td>คัดได้ตามปกติ</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div class="footer-left">
-                                    <p>หมายเหตุ: บันทึกการดูแลนี้มีความสำคัญ
-                                        และต้องเก็บรักษาไว้เพื่อการอ้างอิงในภายหลัง</p>
-                                    <p>สรุปการรายงานการรักษาผู้ป่วย:</p>
-                                    <p>สรุปผลการตรวจรักษาผู้ป่วย หน่วยที่ __ แผนก __ หมายเลขผู้ป่วย ___ ชื่อ-สกุล
-                                        ___
-                                        การประเมิน
-                                        Admit __
-                                        ลงทะเบียนที่ __ จำนวนนัด F/U __ หมายเหตุ: __ ป่วย __ ระดับความรุนแรง __
-                                        สถานะการติดตาม
-                                        __</p>
+                                <div class="print-btn">
+                                    <button class="btn btn-primary btn-sm" onclick="window.print()">พิมพ์เอกสาร</button>
                                 </div>
                             </div>
+
+                            <div class="header">
+                                <div class="d-flex justify-content-end mb-1">
+
+                                    <button class="btn btn-primary mx-1" data-toggle="modal"
+                                        data-target="#filterByDateModal" style="height: 32px; border-radius: 8px;">
+                                        <i class="fas fa-filter me-1"></i> ตัวกรอง
+                                    </button>
+                                </div>
+                                <h2 style="font-size: 20px;">แบบรายงานการรักษาผู้ป่วย</h2>
+                                @php
+                                    use Illuminate\Support\Carbon;
+
+                                    // แปลงวันที่เป็น Carbon instance และแสดงเป็นภาษาไทยแบบเต็ม
+                                    Carbon::setLocale('th');
+                                    $carbonDate = Carbon::parse($date)->addYears(543); // แปลง ค.ศ. เป็น พ.ศ.
+                                    $thaiFormattedDate = $carbonDate->translatedFormat('j F พ.ศ. Y'); // เช่น 27 มิถุนายน พ.ศ. 2567
+                                @endphp
+
+                                <p style="font-size: 16px;">
+                                    ผลการรักษาประวัติ วันที่ {{ $thaiFormattedDate }}
+                                </p>
+
+
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th style="width: 5%;">ลำดับ</th>
+                                            <th style="width: 15%;">ชื่อ-สกุล</th>
+                                            <th style="width: 12%;">หน่วยฝึก</th>
+                                            <th style="width: 12%;">หน่วย</th>
+                                            <th style="width: 12%;">อาการ</th>
+                                            <th style="width: 18%;">การวินิจฉัยโรค</th>
+                                            <th style="width: 10%;">แพทย์</th>
+                                            <th style="width: 8%;">สถานการณ์จำแนก</th>
+                                            <th style="width: 10%;">ระบุวันที่งดฝึก</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @php $seenAdmitKeys = []; @endphp
+                                        @php $rowNumber = 1; @endphp
+
+                                        @foreach($medicalDiagnoses as $index => $diagnosis)
+                                            @php
+                                                $isAdmit = $diagnosis->treatment_status === 'Admit';
+                                                $key = $diagnosis->treatment_id . '|' . $diagnosis->diagnosis_date;
+
+                                                if ($isAdmit && in_array($key, $seenAdmitKeys)) {
+                                                    continue;
+                                                }
+
+                                                if ($isAdmit) {
+                                                    $seenAdmitKeys[] = $key;
+                                                    $departments = collect($unitDistinctTreatmentDisplay[
+                                                        optional(optional($diagnosis->treatment->checkin->appointment->medicalReport->soldier)->trainingUnit)->unit_name
+                                                    ])->filter(function ($depts) use ($diagnosis) {
+                                                        return in_array($diagnosis->department_type, $depts);
+                                                    })->flatten()->unique()->implode(', ');
+                                                }
+                                            @endphp
+
+                                            <tr>
+                                                <td>{{ $rowNumber++ }}</td>
+                                                <td>{{ optional($diagnosis->treatment->checkin->appointment->medicalReport->soldier)->first_name }}
+                                                    {{ optional($diagnosis->treatment->checkin->appointment->medicalReport->soldier)->last_name }}
+                                                </td>
+                                                <td>{{ optional(optional($diagnosis->treatment->checkin->appointment->medicalReport->soldier)->trainingUnit)->unit_name ?? '-' }}
+                                                </td>
+                                                <td>{{ optional($diagnosis->treatment->checkin->appointment->medicalReport->soldier)->affiliated_unit }}
+                                                </td>
+                                                <td>{{ optional($diagnosis->treatment->checkin->appointment->medicalReport)->symptom_description ?? '-' }}
+                                                </td>
+                                                <td>
+                                                    @if($diagnosis->diseases->isEmpty()) - @else
+                                                        @foreach($diagnosis->diseases as $disease)
+                                                            {{ $disease->icd10_code }} [{{ $disease->disease_name_en }}]<br>
+                                                        @endforeach
+                                                    @endif
+                                                </td>
+                                                <td>{{ $diagnosis->doctor_name }}</td>
+                                                <td>
+                                                    @php
+                                                        $diagnosisDate = Carbon::parse($diagnosis->diagnosis_date)->format('Y-m-d H:i');
+                                                        $followUp = collect($followUpAppointments)->first(function ($appointment) use ($diagnosisDate) {
+                                                            return $appointment->is_follow_up == 1 &&
+                                                                optional($appointment->created_at)->format('Y-m-d H:i') === $diagnosisDate;
+                                                        });
+
+                                                    @endphp
+                                                    @if ($diagnosis->treatment_status === 'Follow-up')
+                                                        Follow-up<br>
+                                                        {{ $followUp ? \Carbon\Carbon::parse($followUp->appointment_date)->format('d/m/Y (H:i)') : '-' }}
+                                                    @elseif ($isAdmit)
+                                                        Admit<br>
+                                                        ({{ $departments }})
+                                                    @else
+                                                        {{ $diagnosis->treatment_status }}
+                                                    @endif
+
+                                                </td>
+                                                <td>{{ $diagnosis->training_instruction }}</td>
+                                            </tr>
+                                        @endforeach
+
+                                    </tbody>
+
+                                </table>
+                            </div>
+
+                            <div class="footer-left">
+
+                                {{-- สรุปผลการตรวจรักษารายหน่วย --}}
+                                <p><strong>สรุปผลการตรวจรักษารายหน่วย</strong></p>
+                                @php $total = 0; @endphp
+                                @foreach ($unitNames as $unit)
+                                    @php
+                                        $count = $unitFullPatientCount[$unit] ?? 0;
+                                        $total += $count;
+                                    @endphp
+                                    หน่วยฝึก {{ $unit }} <u>{{ $count }}</u> นาย,
+                                @endforeach
+                                รวม <u>{{ $total }}</u> นาย
+
+                                <p>สรุปการ Admit
+                                    @php $totalAdmit = 0; @endphp
+                                    @foreach($admitSummaries as $unit => $count)
+                                        หน่วยฝึก {{ $unit }} <u>{{ $count }}</u> นาย,
+                                        @php $totalAdmit += $count; @endphp
+                                    @endforeach
+                                    รวม <u>{{ $statusCounts['admit'] }}</u> นาย</p>
+
+                                <p>สถานะการจำหน่าย
+                                    Admit <u>{{ $statusCounts['admit'] ?? 0 }}</u> นาย,
+                                    Discharge <u>{{ $statusCounts['discharge'] ?? 0 }}</u> นาย,
+                                    Refer <u>{{ $statusCounts['refer'] ?? 0 }}</u> นาย,
+                                    นัด F/U <u>{{ $statusCounts['followup'] ?? 0 }}</u> นาย</p>
+
+                                <p><strong>หมายเหตุหน่วยฝึก มี {{ count($unitNames) }} หน่วยฝึก</strong> ได้แก่
+                                    {{ implode(' / ', $unitNames) }}
+                                </p>
+
+
+                            </div>
+
+
+
                         </div>
+
+
+
+
+
+
+
 
                         <!-- ส่วนแสดงสถิติโรค OPD -->
                         <div class="container-wrapper stats-section">
+                            <div class="d-flex justify-content-end mb-3">
+
+                                <button class="btn btn-primary mx-1" data-toggle="modal"
+                                    data-target="#filterByRangeAndDeptModal" style="height: 32px; border-radius: 8px;">
+                                    <i class="fas fa-filter me-1"></i> ตัวกรอง
+                                </button>
+                            </div>
                             <div class="stats-header">
-                                <h3>รายงานโรคที่พบมากที่สุด 10 อันดับของ OPD</h3>
-                                <p>ช่วงวันที่ 1 พ.ย. 66 - 31 ม.ค. 67</p>
+                                <h3 id="chartTitle">รายงานโรคที่พบมากที่สุด 10 อันดับของ OPD</h3>
+
+                                <p id="dateRangeDisplay">ช่วงวันที่ -</p>
                             </div>
 
                             <!-- กราฟแสดงสถิติโรค OPD -->
@@ -386,9 +410,20 @@
 
                         <!-- ส่วนแสดงสถิติการรักษาตามหน่วยฝึก -->
                         <div class="container-wrapper stats-section">
+                            <!-- 🔍 ฟอร์มตัวกรอง -->
+                            <div class="d-flex justify-content-end mb-3">
+                                <button class="btn btn-primary mx-1" data-toggle="modal"
+                                    data-target="#filterByDateAndTypeModal" style="height: 32px; border-radius: 8px;">
+                                    <i class="fas fa-filter me-1"></i> ตัวกรอง
+                                </button>
+
+
+
+                            </div>
+
                             <div class="stats-header">
                                 <h3>รายงานผลการรักษาตามหน่วยฝึก</h3>
-                                <p>ข้อมูล ณ วันที่ 27 มิถุนายน 2567</p>
+                                <p id="reportDate">ข้อมูล ณ วันที่ ...</p>
                             </div>
 
                             <!-- กราฟแสดงสถิติการรักษา -->
@@ -413,305 +448,367 @@
                                     </tbody>
                                 </table>
                             </div>
-
                         </div>
-
-
-
                     </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal 1: กรองตามวันที่เดียว -->
+    <div class="modal fade" id="filterByDateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <form method="GET" class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">แบบรายงานการรักษาผู้ป่วย
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <label for="date" class="form-label fw-semibold">เลือกวันที่:</label>
+                    <input type="date" name="date" id="date" class="form-control">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">กรอง</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: ช่วงวันที่ + ปุ่มแผนก -->
+    <div class="modal fade" id="filterByRangeAndDeptModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">รายงานโรคที่พบมากที่สุด 10 อันดับ</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="filterFormModal">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="start_date_modal">เริ่มวันที่:</label>
+                                <input type="date" class="form-control" id="start_date_modal" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="end_date_modal">ถึงวันที่:</label>
+                                <input type="date" class="form-control" id="end_date_modal" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="department_modal">เลือกแผนก:</label>
+                                <select id="department_modal" class="form-control">
+                                    <option value="opd">OPD</option>
+                                    <option value="er">ER</option>
+                                    <option value="ipd">IPD</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="text-right mt-3">
+                            <button type="button" class="btn btn-primary" onclick="filterFromModal2()">
+                                <i class="fas fa-search me-1"></i> ค้นหา
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 
+
+    <!-- Modal 3: วันที่ + dropdown แผนก -->
+
+    <!-- ปุ่มเปิด Modal ตัวกรองที่ 3 -->
+
+    <!-- Modal 3 -->
+    <div class="modal fade" id="filterByDateAndTypeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h5 class="modal-title">รายงานผลการรักษาตามหน่วยฝึก
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="filterDate_modal">เลือกวันที่:</label>
+                        <input type="date" id="filterDate_modal" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="departmentType_modal">เลือกแผนก:</label>
+                        <select id="departmentType_modal" class="form-control">
+                            <option value="">ทั้งหมด</option>
+                            <option value="opd">OPD</option>
+                            <option value="er">ER</option>
+                            <option value="ipd">IPD</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="applyModal3Filter()">ค้นหา</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     @include('themes.script')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
     <script>
-        // ฟังก์ชันสำหรับล้างตัวกรอง
-        function resetFilter() {
-            document.getElementById('startDate').value = '';
-            document.getElementById('endDate').value = '';
-            document.getElementById('department').value = '';
-            document.getElementById('status').value = '';
-            document.getElementById('reportFilterForm').submit();
+        let topDiseasesData = {};
+        let chartInstance = null;
+        let currentDept = 'opd';
+
+        function getTodayThaiDateISO() {
+            const now = new Date();
+            // เพิ่ม 7 ชั่วโมงเพื่อให้เป็นเวลาประเทศไทย
+            now.setHours(now.getHours() + 7);
+            return now.toISOString().split('T')[0];
+        }
+        // ✅ แปลงวันที่เป็นภาษาไทยแบบย่อ
+        function formatDateThai(dateString) {
+            const months = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+                'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            const date = new Date(dateString);
+            const day = date.getDate();
+            const month = months[date.getMonth() + 1];
+            const year = date.getFullYear() + 543;
+            return `${day} ${month} ${year}`;
         }
 
-        // ฟังก์ชันสำหรับพิมพ์รายงาน
-        function printReport() {
-            window.print();
+        // ✅ แปลงวันที่เป็นไทยแบบเต็ม
+        function formatThaiDate(isoDate) {
+            const months = [
+                "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+                "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+            ];
+            const d = new Date(isoDate);
+            const day = d.getDate();
+            const month = months[d.getMonth()];
+            const year = d.getFullYear() + 543;
+            return `${day} ${month} ${year}`;
         }
 
-        // ฟังก์ชันสำหรับส่งออกเป็น PDF
-        function exportToPDF() {
-            // ใช้ html2canvas และ jsPDF เพื่อสร้าง PDF
-            const { jsPDF } = window.jspdf;
+        // ✅ โหลดและแสดงโรคยอดนิยมจาก modal
+        function filterFromModal2() {
+            const startDate = document.getElementById('start_date_modal').value;
+            const endDate = document.getElementById('end_date_modal').value;
+            const department = document.getElementById('department_modal').value;
 
-            // เลือก element ที่ต้องการแปลงเป็น PDF
-            const element = document.querySelector('.container-wrapper');
+            if (!startDate || !endDate) {
+                alert("กรุณาเลือกวันที่ให้ครบ");
+                return;
+            }
 
-            // ใช้ html2canvas เพื่อ capture หน้าเว็บ
-            html2canvas(element, {
-                scale: 2,
-                logging: true,
-                useCORS: true,
-                allowTaint: true
-            }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgWidth = 210; // A4 width in mm
-                const pageHeight = 295; // A4 height in mm
-                const imgHeight = canvas.height * imgWidth / canvas.width;
-                let heightLeft = imgHeight;
-                let position = 0;
+            const startText = formatThaiDate(startDate);
+            const endText = formatThaiDate(endDate);
+            document.getElementById('dateRangeDisplay').textContent = `ช่วงวันที่ ${startText} - ${endText}`;
 
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
+            fetch(`/admin/hospital/staticgraph?start_date=${startDate}&end_date=${endDate}`)
+                .then(res => res.json())
+                .then(data => {
+                    topDiseasesData = data.topDiseasesByDepartment;
+                    filterByDepartment(department);
+                })
+                .catch(err => {
+                    console.error("เกิดข้อผิดพลาด:", err);
+                });
 
-                // ถ้าเนื้อหายาวเกิน 1 หน้า ให้เพิ่มหน้าใหม่
-                while (heightLeft >= 0) {
-                    position = heightLeft - imgHeight;
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
+            $('#filterByRangeAndDeptModal').modal('hide');
+        }
+
+        // ✅ เปลี่ยนแผนกแสดงผล (OPD, IPD, ER)
+        function filterByDepartment(dept) {
+            currentDept = dept;
+            const data = topDiseasesData[dept] || [];
+
+            document.getElementById('chartTitle').textContent = `รายงานโรคที่พบมากที่สุด 10 อันดับของ ${dept.toUpperCase()}`;
+
+            const diseaseTableBody = document.getElementById('diseaseTableBody');
+            diseaseTableBody.innerHTML = '';
+
+            if (data.length === 0) {
+                diseaseTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">ไม่พบข้อมูลโรคในแผนก ${dept.toUpperCase()}</td></tr>`;
+            } else {
+                data.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${item.code}</td>
+                    <td>${item.name}</td>
+                    <td>${item.count}</td>
+                `;
+                    diseaseTableBody.appendChild(row);
+                });
+            }
+
+            const ctx = document.getElementById('topDiseasesChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => `${item.code} - ${item.name}`),
+                    datasets: [{
+                        label: 'จำนวนผู้ป่วย',
+                        data: data.map(item => item.count),
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return `จำนวนผู้ป่วย: ${context.raw}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { beginAtZero: true },
+                        y: {
+                            ticks: { autoSkip: false, font: { size: 12 } },
+                            grid: { display: false }
+                        }
+                    }
                 }
-
-                // บันทึกไฟล์ PDF
-                pdf.save('รายงานการรักษาผู้ป่วย_' + new Date().toLocaleDateString('th-TH') + '.pdf');
             });
         }
 
-        // ... (โค้ด JavaScript เดิมทั้งหมด) ...
+        // ✅ โหลดข้อมูลรักษาตามหน่วยฝึก
+        function loadTreatmentStatistics(date, departmentType, callback = () => { }) {
+            const reportDate = document.getElementById('reportDate');
+            const displayDate = date;
+            reportDate.innerText = `ข้อมูล ณ วันที่ ${formatThaiDate(displayDate)}`;
 
-        // ตัวอย่างการเชื่อมต่อกับ Backend (AJAX)
-        function fetchReportData() {
-            const formData = new FormData(document.getElementById('reportFilterForm'));
+            const params = new URLSearchParams();
+            if (date) params.append('date', date);
+            if (departmentType) params.append('department_type', departmentType);
 
-            fetch('/api/medical-reports', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    // อัปเดตข้อมูลในตารางและกราฟตามข้อมูลที่ได้จาก Backend
-                    updateReportData(data);
+            fetch(`/admin/hospital/treatment-statistics?${params.toString()}`)
+                .then(res => res.json())
+                .then(result => {
+                    const data = result.statisticsData;
+                    const tableBody = document.getElementById('statisticsTable');
+                    tableBody.innerHTML = '';
+
+                    data.forEach(stat => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                        <td>${stat.training_unit}</td>
+                        <td>${stat.Admit}</td>
+                        <td>${stat.Refer}</td>
+                        <td>${stat.Discharged}</td>
+                        <td>${stat["Follow-up"]}</td>
+                    `;
+                        tableBody.appendChild(row);
+                    });
+
+                    if (window.treatmentChartInstance) {
+                        window.treatmentChartInstance.destroy();
+                    }
+
+                    const ctx = document.getElementById('treatmentChart').getContext('2d');
+                    window.treatmentChartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.map(item => item.training_unit),
+                            datasets: [
+                                {
+                                    label: 'Admit',
+                                    data: data.map(item => item.Admit),
+                                    backgroundColor: 'rgba(0, 123, 255, 0.7)',
+                                    borderColor: 'rgba(0, 123, 255, 1)',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Refer',
+                                    data: data.map(item => item.Refer),
+                                    backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                                    borderColor: 'rgba(255, 193, 7, 1)',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Discharged',
+                                    data: data.map(item => item.Discharged),
+                                    backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                                    borderColor: 'rgba(40, 167, 69, 1)',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Follow-up',
+                                    data: data.map(item => item["Follow-up"]),
+                                    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                                    borderColor: 'rgba(220, 53, 69, 1)',
+                                    borderWidth: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { beginAtZero: true }
+                            },
+                            plugins: {
+                                legend: { position: 'top' }
+                            }
+                        }
+                    });
+
+                    callback();
                 })
                 .catch(error => {
-                    console.error('Error:', error);
-                    alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+                    console.error("เกิดข้อผิดพลาดในการโหลดข้อมูล:", error);
+                    callback();
                 });
         }
 
-        function updateReportData(data) {
-            // อัปเดตตารางและกราฟตามข้อมูลที่ได้รับ
-            // ตัวอย่าง:
-            // document.getElementById('patientTableBody').innerHTML = ...;
-            // updateCharts(data);
+        // ✅ เรียกจาก modal ตัวที่ 3 (รักษาตามหน่วยฝึก)
+        function applyModal3Filter() {
+            const date = document.getElementById('filterDate_modal').value;
+            const department = document.getElementById('departmentType_modal').value;
+
+            if (!date) {
+                alert("กรุณาเลือกวันที่");
+                return;
+            }
+
+            loadTreatmentStatistics(date, department, () => {
+                $('#filterByDateAndTypeModal').modal('hide');
+            });
         }
 
-        // โหลดข้อมูลครั้งแรกเมื่อหน้าเว็บโหลดเสร็จ
-        document.addEventListener('DOMContentLoaded', function () {
-            fetchReportData();
+        // ✅ โหลดข้อมูลทั้งหมดเมื่อเปิดหน้าเว็บ
+        window.addEventListener('DOMContentLoaded', () => {
+            const today = getTodayThaiDateISO();
+
+            // ตั้งค่าวันให้ modal ทั้ง 2
+            document.getElementById('start_date_modal').value = today;
+            document.getElementById('end_date_modal').value = today;
+            document.getElementById('department_modal').value = 'opd';
+
+            document.getElementById('filterDate_modal').value = today;
+            document.getElementById('departmentType_modal').value = '';
+
+            // โหลดกราฟ top 10 โรค และผลรักษา
+            filterFromModal2();
+            loadTreatmentStatistics(today, '');
         });
     </script>
 
-
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // ข้อมูลสถิติโรค OPD (ตัวอย่าง)
-        const opdDiseasesData = {
-            "J00": { name: "ไข้หวัดธรรมดา", count: 125 },
-            "J029": { name: "ลำไส้อักเสบจาก Acute pharyngitis", count: 98 },
-            "L029": { name: "ฝี, ผิวหนังอักเสบ", count: 76 },
-            "Z480": { name: "การดูแลแผลผ่าตัดและเย็บแผล", count: 65 },
-            "R51": { name: "ปวดหัว", count: 54 },
-            "R10": { name: "ปวดท้อง", count: 48 },
-            "S834": { name: "ข้อเท้าแพลง", count: 42 },
-            "M545": { name: "ปวดหลังส่วนล่าง", count: 38 },
-            "H100": { name: "เยื่อบุตาอักเสบ", count: 35 },
-            "B349": { name: "การติดเชื้อไวรัสไม่ระบุรายละเอียด", count: 30 }
-        };
-
-        // ข้อมูลสถิติการรักษาตามหน่วยฝึก (ตัวอย่าง)
-        const treatmentStatisticsData = [
-            { training_unit: "มทบ.11", Admit: 12, Refer: 5, Discharged: 85, Followup: 23 },
-            { training_unit: "มทบ.12", Admit: 8, Refer: 3, Discharged: 92, Followup: 18 },
-            { training_unit: "มทบ.13", Admit: 15, Refer: 7, Discharged: 78, Followup: 30 },
-            { training_unit: "มทบ.14", Admit: 10, Refer: 4, Discharged: 88, Followup: 25 },
-            { training_unit: "มทบ.15", Admit: 5, Refer: 2, Discharged: 95, Followup: 15 }
-        ];
-
-        // เรียงลำดับโรคจากมากไปน้อย
-        const sortedDiseases = Object.keys(opdDiseasesData)
-            .map(code => ({
-                code,
-                name: opdDiseasesData[code].name,
-                count: opdDiseasesData[code].count
-            }))
-            .sort((a, b) => b.count - a.count);
-
-        // แสดงข้อมูลโรคในตาราง OPD
-        const diseaseTableBody = document.getElementById('diseaseTableBody');
-        sortedDiseases.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${item.code}</td>
-                <td>${item.name}</td>
-                <td>${item.count}</td>
-            `;
-            diseaseTableBody.appendChild(row);
-        });
-
-        // สร้างกราฟโรค OPD
-        const opdCtx = document.getElementById('topDiseasesChart').getContext('2d');
-        new Chart(opdCtx, {
-            type: 'bar',
-            data: {
-                labels: sortedDiseases.map(item => `${item.code} - ${item.name}`),
-                datasets: [{
-                    label: 'จำนวนผู้ป่วย',
-                    data: sortedDiseases.map(item => item.count),
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                return `จำนวนผู้ป่วย: ${context.raw}`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 20,
-                            callback: function (value) {
-                                if (value % 20 === 0) {
-                                    return value;
-                                }
-                            }
-                        },
-                        grid: {
-                            display: true
-                        }
-                    },
-                    y: {
-                        ticks: {
-                            autoSkip: false,
-                            font: {
-                                size: 12
-                            }
-                        },
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
-        });
-
-        // เติมข้อมูลสถิติการรักษาในตาราง
-        const statsTableBody = document.getElementById('statisticsTable');
-        treatmentStatisticsData.forEach(stat => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${stat.training_unit}</td>
-                <td>${stat.Admit}</td>
-                <td>${stat.Refer}</td>
-                <td>${stat.Discharged}</td>
-                <td>${stat.Followup}</td>
-            `;
-            statsTableBody.appendChild(row);
-        });
-
-        // สร้างกราฟสถิติการรักษา
-        const treatmentCtx = document.getElementById('treatmentChart').getContext('2d');
-        new Chart(treatmentCtx, {
-            type: 'bar',
-            data: {
-                labels: treatmentStatisticsData.map(item => item.training_unit),
-                datasets: [
-                    {
-                        label: 'Admit',
-                        data: treatmentStatisticsData.map(item => item.Admit),
-                        backgroundColor: 'rgba(0, 123, 255, 0.7)',
-                        borderColor: 'rgba(0, 123, 255, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Refer',
-                        data: treatmentStatisticsData.map(item => item.Refer),
-                        backgroundColor: 'rgba(255, 193, 7, 0.7)',
-                        borderColor: 'rgba(255, 193, 7, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Discharged',
-                        data: treatmentStatisticsData.map(item => item.Discharged),
-                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
-                        borderColor: 'rgba(40, 167, 69, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Followup',
-                        data: treatmentStatisticsData.map(item => item.Followup),
-                        backgroundColor: 'rgba(220, 53, 69, 0.7)',
-                        borderColor: 'rgba(220, 53, 69, 1)',
-                        borderWidth: 1
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 20
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                return `${context.dataset.label}: ${context.raw}`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    </script>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 
 </html>

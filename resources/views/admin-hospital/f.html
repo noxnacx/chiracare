@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout UI</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .content-box {
+            background-color: #888;
+            border-radius: 8px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .header-box {
+            min-height: 80px;
+        }
+
+        .sidebar-box {
+            min-height: 400px;
+        }
+
+        .main-content-box {
+            min-height: 400px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid p-3">
+        <!-- Header Section -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="content-box header-box">
+                    Header Area
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Section -->
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-12 col-md-3 pe-2">
+                <div class="content-box sidebar-box">
+                    Sidebar
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-12 col-md-9 ps-2">
+                <div class="content-box main-content-box">
+                    Main Content Area
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

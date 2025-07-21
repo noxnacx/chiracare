@@ -58,10 +58,7 @@ class MedicalReportController extends Controller
             }
 
             // ✅ ถ้าระดับความเสี่ยงเป็น 'yellow' หรือ 'red' ให้ตั้งค่า status เป็น 'in ER'
-            $status = 'pending'; // ถ้าไม่ได้กรอก risk level หรือเป็น green ตั้งค่าเป็น 'pending'
-            if ($riskLevel === 'yellow' || $riskLevel === 'red') {
-                $status = 'in ER';
-            }
+
 
             // ✅ บันทึกค่าชีวิต (vital signs) (แต่สามารถเป็น null ได้)
             $vitalSign = VitalSign::create([
@@ -78,7 +75,6 @@ class MedicalReportController extends Controller
                 'symptom_description' => $request->symptom_description,
                 'pain_score' => $request->pain_score ?? null,
                 'vital_signs_id' => $vitalSign->id ?? null,
-                'status' => $status, // ตั้งค่า status เป็น 'in ER' หากความเสี่ยงเป็น 'yellow' หรือ 'red', หรือ 'pending' ถ้าเป็น green หรือไม่ได้กรอก
             ]);
 
             Log::info('Medical Report Created Successfully: ', ['report' => $report]);
@@ -111,6 +107,17 @@ class MedicalReportController extends Controller
                 }
             }
 
+            try {
+                \App\Services\NotificationService::notifyNewPatient($report);
+                Log::info('Notification sent successfully for new patient', ['medical_report_id' => $report->id]);
+            } catch (\Exception $e) {
+                // ถ้าการแจ้งเตือนล้มเหลว ไม่ให้กระทบต่อการบันทึกข้อมูล
+                Log::error('Failed to send notification for new patient: ' . $e->getMessage(), [
+                    'medical_report_id' => $report->id
+                ]);
+            }
+
+
             // ✅ เปลี่ยนเส้นทางไปยัง wait_appointment พร้อมข้อความ success
             return response()->json([
                 'success' => true,
@@ -125,7 +132,6 @@ class MedicalReportController extends Controller
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด! ' . $e->getMessage());
         }
     }
-
 
 
 

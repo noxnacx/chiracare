@@ -78,7 +78,7 @@
                             <div class="card">
 
                                 <div class="card-body">
-                                    <table id="soldiersTable" class="table table-striped table-bordered">
+                                    <table class="table table-striped table-bordered data-table">
                                         <thead>
                                             <tr>
                                                 <th>ชื่อ - นามสกุล</th>
@@ -138,7 +138,7 @@
                     </div>
 
 
-                
+
 
 
                 </div><!-- /.container-fluid -->

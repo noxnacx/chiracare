@@ -14,18 +14,29 @@ class HistoryTreatmentController extends Controller
 
     public function showHospitalhistoryDetails(Request $request)
     {
-        // รับค่าตัวกรองจากแบบฟอร์ม
+        // รับค่าตัวกรองจากแบบฟอร์มหรือ query string
         $departmentFilter = $request->input('department', 'all');
         $statusFilter = $request->input('status', 'all');
         $dateFilter = $request->input('date_filter', 'today');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
 
-        // คำนวณยอดเจ็บป่วยสะสม (ไม่กรองวันที่)
+        $today = now()->toDateString();
+
+        // ✅ คำนวณยอดเจ็บป่วยสะสม (ไม่กรองวันที่)
         $patientsStatistics = DB::table('medical_diagnosis')
             ->select('department_type', 'treatment_status', DB::raw('COUNT(*) as total_patients'))
             ->groupBy('department_type', 'treatment_status')
             ->get();
 
-        // Query สำหรับรายละเอียดผู้ป่วย
+        // ✅ คำนวณยอดเจ็บป่วย "เฉพาะวันนี้" เท่านั้น (ไม่ขึ้นกับ filter)
+        $patientsStatisticsDaily = DB::table('medical_diagnosis')
+            ->select('department_type', 'treatment_status', DB::raw('COUNT(*) as total_patients'))
+            ->whereDate('diagnosis_date', $today)
+            ->groupBy('department_type', 'treatment_status')
+            ->get();
+
+        // ✅ สร้าง query ดึงรายละเอียดผู้ป่วย (พร้อม JOIN ตารางที่เกี่ยวข้อง)
         $patientQuery = DB::table('medical_diagnosis as md')
             ->join('treatment as t', 'md.treatment_id', '=', 't.id')
             ->join('checkin as c', 't.checkin_id', '=', 'c.id')
@@ -59,51 +70,36 @@ class HistoryTreatmentController extends Controller
             )
             ->orderBy('md.diagnosis_date', 'desc');
 
-        // Query สำหรับสถิติรายวัน
-        $dailyStatsQuery = DB::table('medical_diagnosis')
-            ->select('department_type', 'treatment_status', DB::raw('COUNT(*) as total_patients'));
-
-        // เงื่อนไขกรองวันที่
+        // ✅ กรองวันที่ (today / custom)
         if ($dateFilter === 'today') {
-            $today = now()->toDateString();
             $patientQuery->whereDate('md.diagnosis_date', $today);
-            $dailyStatsQuery->whereDate('diagnosis_date', $today);
-        } elseif ($dateFilter === 'custom' && $request->filled(['start_date', 'end_date'])) {
-            $startDate = $request->input('start_date');
-            $endDate = $request->input('end_date');
+        } elseif ($dateFilter === 'custom' && $startDate && $endDate) {
             $patientQuery->whereBetween('md.diagnosis_date', [$startDate, $endDate . ' 23:59:59']);
-            $dailyStatsQuery->whereBetween('diagnosis_date', [$startDate, $endDate . ' 23:59:59']);
         }
 
-        // เงื่อนไขกรองแผนก
+        // ✅ กรองแผนก
         if ($departmentFilter !== 'all') {
             $patientQuery->where('md.department_type', $departmentFilter);
-            $dailyStatsQuery->where('department_type', $departmentFilter);
         }
 
-        // เงื่อนไขกรองสถานะการรักษา
+        // ✅ กรองสถานะ
         if ($statusFilter !== 'all') {
             $patientQuery->where('md.treatment_status', $statusFilter);
-            $dailyStatsQuery->where('treatment_status', $statusFilter);
         }
 
-        // คำนวณยอดรายวัน
-        $patientsStatisticsDaily = $dailyStatsQuery
-            ->groupBy('department_type', 'treatment_status')
-            ->get();
-
-        // ดึงข้อมูลรายละเอียดผู้ป่วย
+        // ✅ ดึงข้อมูลจริง
         $patientDetails = $patientQuery->get();
 
-        // ส่งค่ากลับไปยัง view
+        // ✅ ส่งค่ากลับไปยัง view
         return view('admin-hospital.history_hospital', compact(
             'patientDetails',
             'patientsStatistics',
             'patientsStatisticsDaily',
-            'dateFilter'
+            'dateFilter',
+            'statusFilter',
+            'departmentFilter'
         ));
     }
-
 
 
 

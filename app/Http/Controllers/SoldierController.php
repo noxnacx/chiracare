@@ -8,12 +8,17 @@ use App\Models\Rotation;
 use App\Models\TrainingUnit;
 use App\Models\MedicalDiagnosis;
 use App\Models\Assessment;
+use App\Models\AppointmentMentalHealth;
+use App\Models\AssessmentStatusTracking;
 use App\Models\AssessmentScore;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session; // ⭐️ เพิ่มบรรทัดนี้เข้ามา
 use App\Models\Appointment;
+use App\Models\MedicalReport; // เพิ่มบรรทัดนี้
+
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 
 class SoldierController extends Controller
@@ -405,27 +410,93 @@ class SoldierController extends Controller
         ]);
     }
 
-    public function dashboard($id)
-    {
-        $soldier = Soldier::findOrFail($id);
+    // ในคลาส SoldierController
 
-        // วันนัดหมายถัดไป (ตัวอย่าง)
-        $nextAppointment = Carbon::parse('2025-04-30');
-        $lastCheckup = Carbon::parse('2025-04-05');
+public function dashboard($id)
+{
+    // 1. ดึงข้อมูลทหาร
+    $soldier = \App\Models\Soldier::findOrFail($id);
 
-        /// ✅ [ฉบับแก้ไข] ใช้ Relationship เพื่อดึงข้อมูลได้ง่ายขึ้น
-        $recentHistories = $soldier->assessmentScores()
-            ->with('assessmentType')
-            ->limit(5) // สามารถเปลี่ยน limit ตรงนี้ได้ตามต้องการ
-            ->get();
+    // --- ส่วนของนัดหมาย ---
+    // 2.1 ดึงนัดหมายกาย (โค้ดส่วนนี้ถูกต้องแล้ว)
+    $physicalAppointments = \App\Models\Appointment::whereHas('medicalReport', function ($query) use ($id) {
+                                $query->where('soldier_id', $id);
+                            })
+                            ->get()->map(function ($item) {
+                                return (object) [
+                                    'date' => $item->appointment_date,
+                                    'description' => $item->appointment_location,
+                                    'type' => 'กาย',
+                                    'status' => $item->status
+                                ];
+                            });
 
-        return view('soldier.dashboard', compact(
-            'soldier',
-            'nextAppointment',
-            'lastCheckup',
-            'recentHistories'
-        ));
-    }
+    // ⬇️⬇️⬇️ [แก้ไข] ส่วนของนัดหมายจิต ⬇️⬇️⬇️
+    // 2.2 ค้นหารหัสการติดตาม (id) ทั้งหมดของทหารคนนี้
+    $trackingIds = \App\Models\AssessmentStatusTracking::where('soldier_id', $id)->pluck('id');
+
+    // 2.3 ใช้รหัสการติดตามที่ได้ ไปค้นหานัดหมายสุขภาพจิตด้วย Foreign Key ที่ถูกต้อง
+    $mentalAppointments = \App\Models\AppointmentMentalHealth::whereIn('status_tracking_id', $trackingIds)
+                            ->get()->map(function ($item) {
+                                return (object) [
+                                    'date' => $item->appointment_date,
+                                    'description' => $item->amh_symptoms,
+                                    'type' => 'จิตใจ',
+                                    'status' => $item->status
+                                ];
+                            });
+
+    // 2.4 รวมและจัดเรียงนัดหมายทั้งหมด
+    $allAppointments = $physicalAppointments->concat($mentalAppointments)
+                        ->sortByDesc('date')
+                        ->take(5);
+
+
+    // --- ส่วนของประวัติการรักษา ---
+    // 3.1 ประวัติการรักษากาย (โค้ดส่วนนี้ถูกต้องแล้ว)
+    $physicalHistory = \App\Models\Appointment::where('status', 'completed')
+                        ->whereHas('medicalReport', function ($query) use ($id) {
+                            $query->where('soldier_id', $id);
+                        })->get()->map(function ($item) {
+                            return (object) [
+                                'date' => $item->appointment_date,
+                                'description' => 'รักษาที่: ' . $item->appointment_location,
+                                'type' => 'กาย'
+                            ];
+                        });
+
+    // 3.2 ประวัติการรักษาจิต (ใช้ $trackingIds และ Foreign Key ที่ถูกต้อง)
+    $mentalHistory = \App\Models\AppointmentMentalHealth::where('status', 'completed')
+                        ->whereIn('status_tracking_id', $trackingIds)
+                        ->get()->map(function ($item) {
+                            return (object) [
+                                'date' => $item->appointment_date,
+                                'description' => $item->amh_symptoms,
+                                'type' => 'จิตใจ'
+                            ];
+                        });
+
+    // 3.3 รวมและจัดเรียงประวัติการรักษา
+    $treatmentHistory = $physicalHistory->concat($mentalHistory)
+                            ->sortByDesc('date')
+                            ->take(5);
+
+
+    // --- ส่วนของผลการประเมิน ---
+    $recentHistories = \App\Models\AssessmentScore::with('assessmentType')
+                        ->where('soldier_id', $id)
+                        ->latest('created_at')
+                        ->limit(5)
+                        ->get();
+
+    // --- ส่งข้อมูลทั้งหมดไปที่ View ---
+    return view('soldier.dashboard', compact(
+        'soldier',
+        'allAppointments',
+        'treatmentHistory',
+        'recentHistories'
+    ));
+}
 
 
     // แสดงฟอร์มแก้ไขข้อมูลส่วนตัวเฉพาะบางช่อง
@@ -490,6 +561,48 @@ public function updatePersonalInfo(Request $request, $id)
         return redirect()->route('soldier.edit_personal_info', ['id' => $soldier->id])
                          ->with('success', 'อัปเดตข้อมูลส่วนตัวเรียบร้อยแล้ว');
     }
+}
+public function myAppointments($id)
+{
+    // 1. ดึงข้อมูลทหาร (เพื่อให้เมนูทำงานได้)
+    $soldier = \App\Models\Soldier::findOrFail($id);
+
+    // --- ส่วนของนัดหมาย ---
+    // 2.1 ดึงนัดหมายกาย
+    $physicalAppointments = \App\Models\Appointment::whereHas('medicalReport', function ($query) use ($id) {
+                                $query->where('soldier_id', $id);
+                            })
+                            ->get()->map(function ($item) {
+                                return (object) [
+                                    'appointment_date' => $item->appointment_date,
+                                    'appointment_location' => $item->appointment_location,
+                                    'case_type' => $item->case_type,
+                                    'status' => $item->status,
+                                    'type' => 'สุขภาพกาย',
+                                    'reason' => $item->medicalReport->mr_Symptoms ?? 'นัดหมายสุขภาพกาย'
+                                ];
+                            });
+
+    // 2.2 ดึงนัดหมายจิต
+    $trackingIds = \App\Models\AssessmentStatusTracking::where('soldier_id', $id)->pluck('id');
+    $mentalAppointments = \App\Models\AppointmentMentalHealth::whereIn('status_tracking_id', $trackingIds)
+                        ->get()->map(function ($item) {
+                            return (object) [
+                                'appointment_date' => $item->appointment_date,
+                                'appointment_location' => $item->appointment_location ?? 'ไม่ระบุสถานที่', // ✅ แก้ไขให้ดึงข้อมูลจริง
+                                'case_type' => 'normal',
+                                'status' => $item->status,
+                                'type' => 'สุขภาพจิต',
+                                'reason' => $item->amh_symptoms
+                            ];
+                        });
+
+    // 2.3 รวมและจัดเรียงนัดหมายทั้งหมด
+    $allAppointments = $physicalAppointments->concat($mentalAppointments)
+                        ->sortByDesc('appointment_date');
+
+    // 3. ส่งข้อมูลทั้งหมดไปที่ View
+    return view('soldier.my_appointments', compact('soldier', 'allAppointments'));
 }
 
 }

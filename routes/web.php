@@ -312,6 +312,7 @@ Route::put('/appointments/{id}', [AppointmentController::class, 'updateAppointme
     Route::post('/login-soldier', [SoldierController::class, 'authenticate'])->name('soldier.authenticate');
 
     Route::get('/medical-diagnosis/details/{id}', [SoldierController::class, 'getDiagnosisDetails'])->name('diagnosis.details');
+    Route::get('/soldier/{id}/my-appointments', [App\Http\Controllers\SoldierController::class, 'myAppointments'])->name('soldier.my_appointments');
 
 
 // ✅ แบบประเมิน

@@ -1,757 +1,950 @@
 <!DOCTYPE html>
 <html lang="th">
 @include('themes.head')
-<style>
-    .custom-card {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #dee2e6;
-        background: #fff;
-        position: relative;
-        text-align: left;
-    }
 
-    .custom-card h5 {
-        margin-bottom: 5px;
-    }
+<head>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
-    .custom-card h3 {
-        font-weight: bold;
-    }
-
-    .custom-card-icon {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: transparent;
-        padding: 5px;
-        border-radius: 50%;
-    }
-
-    .custom-card-icon i {
-        font-size: 20px;
-    }
-</style>
-
-<body class="hold-transition layout-fixed">
-    <div class="wrapper">
-        <!-- Navbar -->
-        @include('themes.admin-hospital.navbarhospital')
-        <!-- Main Sidebar Container -->
-        @include('themes.admin-hospital.menuhospital')
-
-        <!-- Content Wrapper -->
-        <div class="content-wrapper">
-            <div class="content-header">
-                <div class="container-fluid">
-                    <div class="container">
-
-                        <div class="d-flex justify-content-between align-items-center mt-3 mb-3 flex-wrap gap-2">
-                            <h2 class="fw-bold mb-0" style="color: #2c3e50;">
-                                แดชบอร์ดแอดมินโรงพยาบาล
-                            </h2>
-
-
-                            <a href="{{ url('hospital/appointments') }}" class="btn btn-success">
-                                นัดหมายทหาร
-                            </a>
-
-                        </div>
-
-                        <div class="row mt-3">
-                            <!-- จำนวนทหารในหน่วย -->
-
-                            <!-- นัดหมายสำเร็จ -->
-                            <div class="col-md-3">
-                                <a href={{ url('/hospital/statistics?status=all&department=opd&date_filter=today') }}
-                                    class="text-decoration-none text-dark">
-                                    <div class="card shadow-sm custom-card">
-                                        <h5>OPD <span style="font-size: 16px; font-weight: normal;">ยอดสะสมรายวัน</span>
-                                        </h5>
-                                        <h3>
-                                            {{ $opdCount }} <span
-                                                style="font-size: 16px; font-weight: normal;">คน</span>
-                                        </h3>
-                                        <div class="custom-card-icon">
-                                            <i class="fas fa-users" style="color: #10b981;"></i>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="col-md-3">
-                                <a href={{ url('/hospital/statistics?status=all&department=er&date_filter=today') }}
-                                    class="text-decoration-none text-dark">
-                                    <div class="card shadow-sm custom-card">
-                                        <h5>ER <span style="font-size: 16px; font-weight: normal;">ยอดสะสมรายวัน</span>
-                                        </h5>
-                                        <h3>
-                                            {{ $erCount }} <span style="font-size: 16px; font-weight: normal;">คน</span>
-                                        </h3>
-                                        <div class="custom-card-icon">
-                                            <i class="fas fa-ambulance" style="color: #dc3545;"></i>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-
-
-                            <div class="col-md-3">
-                                <a href={{ url('/hospital/statistics?status=all&department=ipd&date_filter=today') }}
-                                    class="text-decoration-none text-dark">
-                                    <div class="card shadow-sm custom-card">
-                                        <h5>IPD <span style="font-size: 16px; font-weight: normal;">ยอดสะสมรายวัน</span>
-                                        </h5>
-                                        <h3>
-                                            {{ $ipdCount }} <span
-                                                style="font-size: 16px; font-weight: normal;">คน</span>
-                                        </h3>
-                                        <div class="custom-card-icon">
-                                            <i class="fas fa-procedures" style="color: #6f42c1;"></i>
-                                            <!-- สีม่วงสุขภาพดี -->
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-
-
-
-
-                            <div class="col-md-3">
-                                <a href="{{ route('appointments.scheduledByUnit') }}"
-                                    class="text-decoration-none text-dark">
-                                    <div class="card shadow-sm custom-card">
-                                        <h5>นัดหมายจิตเวชวันนี้</h5>
-                                        <h3>
-                                            3 <span style="font-size: 16px; font-weight: normal;">คน</span>
-                                        </h3>
-                                        <div class="custom-card-icon">
-                                            <i class="fas fa-brain" style="color:rgb(229, 160, 12);"></i>
-                                            <!-- สีม่วงเข้ม สื่อถึงจิตใจ -->
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-
-                        </div>
-
-                        <!-- Today's Appointments Section -->
-                        <div class="row mt-3">
-                            <!-- Today's Appointments -->
-                            <div class="col-md-6 d-flex align-items-stretch">
-                                <div class="card shadow-sm w-100">
-                                    <div class="card-body">
-                                        <div class="card p-3 shadow-sm"
-                                            style="background-color: #f8f9fa; border-radius: 8px;">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <h5 class="fw-bold">
-                                                    นัดหมายปกติวันนี้
-                                                    <span
-                                                        class="text-primary fw-bold">({{ $appointments->where('case_type', 'normal')->count() }}
-                                                        คน)</span>
-                                                </h5>
-                                                <a href="{{ url('hospital/appointments') }}?status=scheduled&case_type=normal&date={{ \Carbon\Carbon::now()->format('Y-m-d') }}&rotation_id=&training_unit_id="
-                                                    class="btn btn-info btn-sm">
-                                                    ดูทั้งหมด
-                                                </a>
-
-
-                                            </div>
-                                        </div>
-
-                                        <table id="appointmentTable" class="table table-striped table-bordered mt-3">
-                                            <thead class="table-dark">
-                                                <tr>
-                                                    <th>ชื่อ - นามสกุล</th>
-                                                    <th>นัดหมาย</th>
-                                                    <th>สถานะ</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @php
-                                                    $normalAppointments = $appointments->where('case_type', 'normal')->take(3);
-                                                @endphp
-
-                                                @if($normalAppointments->count() > 0)
-                                                    @foreach ($normalAppointments as $appointment)
-                                                        <tr>
-                                                            <td>{{ $appointment->medicalReport->soldier->first_name ?? '-' }}
-                                                                {{ $appointment->medicalReport->soldier->last_name ?? '-' }}
-                                                            </td>
-                                                            <td>
-                                                                <strong>เวลา :</strong>
-                                                                {{ \Carbon\Carbon::parse($appointment->appointment_date)->format('H:i') }}
-                                                                น.
-                                                                <br>
-                                                                <strong>สถานที่ :</strong>
-                                                                {{ $appointment->appointment_location ?? 'ไม่ระบุ' }}
-                                                            </td>
-                                                            <td>
-                                                                @if (!is_null($appointment->checkin) && $appointment->checkin->checkin_status === 'checked-in')
-                                                                    <span class="badge custom-badge bg-white shadow">🟢
-                                                                        เข้ารับการรักษาแล้ว</span>
-                                                                @else
-                                                                    <span class="badge custom-badge bg-white shadow">🟠
-                                                                        ยังไม่ได้เข้ารับการรักษา</span>
-                                                                @endif
-
-
-
-
-                                                            </td>
-
-                                                        </tr>
-                                                    @endforeach
-                                                @else
-                                                    <tr>
-                                                        <td colspan="6" class="text-center text-danger">❌
-                                                            ไม่มีเคสปกติในวันนี้</td>
-                                                    </tr>
-                                                @endif
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- High-Risk Watchlist -->
-                            <div class="col-md-6 d-flex align-items-stretch">
-                                <div class="card shadow-sm w-100">
-                                    <div class="card-body">
-                                        <div class="card p-3 shadow-sm"
-                                            style="background-color: #f8d7da; border-radius: 8px;">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <h5 class="fw-bold mb-0">
-                                                    เคสวิกฤติ
-                                                    <span class="text-danger ms-2">{{ $criticalAppointments->count() }}
-                                                        เคส</span>
-                                                </h5>
-                                                <!-- ปุ่มดูทั้งหมด -->
-                                                <a href="{{ url('hospital/appointments') }}?status=scheduled&case_type=critical&date={{ \Carbon\Carbon::now()->format('Y-m-d') }}&rotation_id=&training_unit_id="
-                                                    class="btn btn-danger btn-sm">
-                                                    ดูทั้งหมด
-                                                </a>
-
-                                            </div>
-                                        </div>
-                                        @foreach ($criticalAppointments as $appointment)
-                                            <div class="p-2 critical">
-                                                <div class="d-flex justify-content-between">
-                                                    <div>
-                                                        <p><strong>
-                                                                @if($appointment->medicalReport && $appointment->medicalReport->soldier)
-                                                                    {{ $appointment->medicalReport->soldier->first_name }}
-                                                                    {{ $appointment->medicalReport->soldier->last_name }}
-                                                                @else
-                                                                    <span class="text-danger">ข้อมูลทหารไม่พบ</span>
-                                                                @endif
-                                                            </strong></p>
-                                                        <p><span>
-                                                                สถานที่:
-                                                                {{ $appointment->appointment_location }}
-                                                            </span></p>
-                                                    </div>
-
-                                                    <div>
-                                                        <p class="fw-bold">
-                                                            {{ \Carbon\Carbon::parse($appointment->appointment_date)->format('H:i') }}
-                                                            น.
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mt-4">
-                            <!-- Graph 1: จำนวนผู้ป่วยที่ต้องเฝ้าระวัง -->
-                            <div class="col-md-6">
-                                <div class="card shadow-sm">
-                                    <div class="card-body">
-                                        <h5 class="fw-bold">สถิติโรคที่ต้องเฝ้าระวัง</h5>
-                                        <div
-                                            style="height: 100%; display: flex; justify-content: center; align-items: center;">
-                                            <canvas id="topDiseasesChart"
-                                                style="max-height: 100%; width: 100%;"></canvas>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Graph 2: กราฟโรคที่ต้องการ -->
-                            <div class="col-md-6">
-                                <div class="card shadow-sm">
-                                    <div class="card-body">
-                                        <h5 class="fw-bold d-flex justify-content-between align-items-center">
-                                            กราฟโรคที่ต้องการ
-                                            <!-- Button to open the popup for disease code -->
-                                            <button class="btn btn-info" id="openPopup">กรุณากรอกรหัสโรค</button>
-                                        </h5>
-
-                                        <!-- Message to show when no disease code is entered -->
-                                        <div id="noDiseaseMessage" class="text-center text-muted"
-                                            style="display: flex; justify-content: center; align-items: center; height: 100%;">
-                                            <p>ยังไม่ระบุรหัสโรค</p>
-                                        </div>
-
-                                        <div
-                                            style="height: 100%; display: flex; justify-content: center; align-items: center;">
-                                            <!-- The chart canvas, initially hidden -->
-                                            <canvas id="diseaseGraph" style="max-height: 100%;; width: 100%;"></canvas>
-
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-
-                    </div>
-
-
-
-
-
-                </div>
-
-
-            </div>
-        </div>
-    </div>
-
-    <!-- วันที่และรหัสโรค Modal -->
-    <div class="modal fade" id="diseaseModal" tabindex="-1" aria-labelledby="diseaseModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-
-                <div class="modal-header">
-                    <h5 class="modal-title" id="diseaseModalLabel">กรุณากรอกรหัสโรคและเลือกช่วงวันที่</h5>
-                </div>
-
-                <div class="modal-body">
-                    <!-- รหัสโรค -->
-                    <!-- Input สำหรับกรอกรหัสโรค -->
-                    <label for="diseaseCodes" class="form-label fw-bold">กรอกรหัสโรค</label>
-                    <input type="text" class="form-control mb-2" id="diseaseCodes"
-                        placeholder="พิมพ์รหัสแล้ว Enter หรือ Space">
-                    <!-- Tag preview -->
-                    <div id="diseaseTagPreview" class="d-flex flex-wrap gap-2"></div>
-
-
-                    <!-- ตัวเลือกช่วงวันที่ -->
-                    <div class="mb-3">
-                        <label for="dateOption" class="form-label fw-semibold text-dark">เลือกวันที่:</label>
-                        <select id="dateOption" class="form-select custom-select">
-                            <option value="today">วันนี้</option>
-                            <option value="range" selected>ระหว่างวันที่</option>
-                            <option value="all">ทั้งหมด</option>
-                        </select>
-                    </div>
-
-
-                    <!-- กล่องช่วงวันที่ -->
-                    <div id="dateRangeInputs" class="row g-2 mb-3">
-                        <div class="col">
-                            <input type="date" class="form-control" id="startDate">
-                        </div>
-                        <div class="col-auto d-flex align-items-center">
-                            <span>ถึง</span>
-                        </div>
-                        <div class="col">
-                            <input type="date" class="form-control" id="endDate">
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-danger" id="clearTagsBtn">ล้างรหัสทั้งหมด</button>
-
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-                    <button type="button" class="btn btn-primary" id="fetchData">แสดงข้อมูล</button>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-
-
-    <!-- Include Bootstrap JS -->
-
-
-    @include('themes.scriptnotable')
-    <!-- Additional CSS Styling -->
     <style>
-        .critical {
-            background-color: rgb(255, 255, 255);
-            border-left: 5px solid #dc3545;
-            margin-bottom: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            /* Adds a soft shadow */
+        /* 🧹 Cleaned CSS - ลบส่วนที่ไม่ใช้แล้ว */
+
+        :root {
+            --primary-color: #77B2C9;
+            --secondary-color: #D6E7EE;
+            --accent-color: #f3e8ff;
+            --text-color: #222429;
+            --gray-color: rgb(172, 172, 172);
+            --white-color: #FFFFFF;
+            --snow-color: #f9f9f9;
         }
 
-
-        .critical p {
-            margin: 0;
+        /* Layout & Grid */
+        .container-fluid {
+            max-width: 1200px;
         }
 
-        .warning {
-            background-color: #fff3cd;
-            border-left: 5px solid #ffc107;
-            margin-bottom: 10px;
+        .main-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: auto auto auto auto;
+            gap: 15px;
+            row-gap: 10px;
+            padding-bottom: 30px;
         }
 
-        .appointment-list {
-            padding: 10px;
+        .grid-1 {
+            grid-column: 1/4;
+            grid-row: 1;
         }
 
-        .appointment-list .fw-bold {
-            font-size: 16px;
-            color: #333;
+        .grid-2 {
+            grid-column: 4/7;
+            grid-row: 1;
         }
 
-        .appointment-list .text-muted {
-            color: rgb(28, 74, 114);
+        .grid-3 {
+            grid-column: 7/10;
+            grid-row: 1;
         }
 
-        .appointment-list .text-primary {
-            color: #007bff;
+        .grid-4 {
+            grid-column: 10/13;
+            grid-row: 1;
         }
 
-        .appointment-list .text-warning {
-            color: #ffc107;
+        .grid-5 {
+            grid-column: 1/10;
+            grid-row: 2;
         }
 
-        .appointment-list .border-bottom {
-            border-bottom: 1px solid #ddd;
+        .grid-7 {
+            grid-column: 10/13;
+            grid-row: 2;
         }
 
-        #dateRangeInputs span {
-            padding: 0 10px;
-            font-weight: bold;
-            color: #333;
+        .grid-8 {
+            grid-column: 10/13;
+            grid-row: 3;
+            margin-top: -150px;
         }
 
-        .custom-select {
-            border-radius: 6px;
-            border: 1px solid #ced4da;
-            box-shadow: none;
-            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        .grid-9 {
+            grid-column: 1/10;
+            grid-row: 3;
+            margin-bottom: 30px;
         }
 
-        .custom-select:focus {
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        .grid-item {
+            border-radius: 10px;
         }
 
-        .form-label {
-            font-weight: 600;
+        /* Cards */
+        .simple-card {
+            background: var(--white-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        .card-title {
             font-size: 15px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 6px;
         }
 
+        /* Stats */
+        .stats-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex: 1;
+        }
 
-        #diseaseTagPreview .tag {
-            background-color: #e0f2f1;
-            color: #00695c;
-            border-radius: 20px;
-            padding: 5px 10px;
+        .stat-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            padding: 6px 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+            min-height: 32px;
+        }
+
+        .stat-line:hover {
+            background: #f1f3f4;
+            transform: translateX(1px);
+        }
+
+        .stat-line.missed-line {
+            border-left-color: #dc3545;
+            background: #fff8f8;
+        }
+
+        .stat-line.waiting-line {
+            border-left-color: var(--primary-color);
+            background: #f8fbff;
+        }
+
+        .stat-label {
+            color: var(--text-color);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .stat-number {
+            font-weight: 700;
             font-size: 14px;
+            min-width: 20px;
+            text-align: center;
+            padding: 1px 6px;
+            border-radius: 10px;
+            background: white;
+        }
+
+        .stat-number.missed {
+            color: #dc3545;
+            background: #ffe6e6;
+        }
+
+        .stat-number.waiting {
+            color: var(--primary-color);
+            background: #e6f3ff;
+        }
+
+        /* Icons */
+        .title-icon {
+            color: var(--primary-color);
+            font-size: 14px;
+        }
+
+        .stat-icon {
+            width: 12px;
+            height: 12px;
+            font-size: 10px;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Buttons */
+        .action-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            text-decoration: none;
             display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+            margin-top: auto;
+        }
+
+        /* Tab System - Grid-9 */
+        .top-card {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            height: 50px;
+            background-color: var(--gray-color);
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+        }
+
+        .top-card-item {
+            flex: 1;
+            background-color: var(--white-color);
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .top-card-item:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-1px);
+        }
+
+        .top-card-item.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 6px rgba(119, 178, 201, 0.3);
+        }
+
+        .content-area {
+            display: none;
+            margin-top: 66px;
+            height: calc(100% - 66px);
+            padding: 15px;
+            background-color: var(--white-color);
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .content-area.active {
+            display: block;
+        }
+
+        /* Tab System - Grid-5 */
+        .grid-5 .grid-5-top-card {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            height: 50px;
+            background-color: var(--gray-color);
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            z-index: 10;
+        }
+
+        .grid-5 .grid-5-tab-item {
+            flex: 1;
+            background-color: var(--white-color);
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .grid-5 .grid-5-tab-item:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-1px);
+        }
+
+        .grid-5 .grid-5-tab-item.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 6px rgba(119, 178, 201, 0.3);
+        }
+
+        .grid-5 .grid-5-content-area {
+            display: none;
+            margin-top: 66px;
+            height: calc(100% - 66px);
+            padding: 15px;
+            background-color: var(--white-color);
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .grid-5 .grid-5-content-area.active {
+            display: block !important;
+        }
+
+        /* Chart & Progress Components */
+        .grid-5-content-area {
+            height: calc(100% - 66px);
+            padding: 0;
+            margin-top: 66px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-content-container {
+            flex: 1;
+            height: 100%;
+            overflow: hidden;
+            padding: 8px;
+        }
+
+        .chart-canvas {
+            height: 100% !important;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0 8px;
+        }
+
+        .chart-canvas::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .progress-item {
+            margin-bottom: 0.8rem;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.001rem;
+            font-weight: 300;
+            font-size: 16px;
+            color: #495057;
+        }
+
+        .custom-progress {
+            height: 6px;
+            background-color: var(--gray-color);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar-custom {
+            height: 100%;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            border-radius: 10px;
+            transition: width 1.5s ease-in-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar-custom::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg,
+                    transparent 25%,
+                    rgba(255, 255, 255, 0.1) 25%,
+                    rgba(255, 255, 255, 0.1) 50%,
+                    transparent 50%,
+                    transparent 75%,
+                    rgba(255, 255, 255, 0.1) 75%);
+            background-size: 20px 20px;
+            animation: progressStripes 1s linear infinite;
+        }
+
+        @keyframes progressStripes {
+            0% {
+                background-position: 0 0;
+            }
+
+            100% {
+                background-position: 20px 0;
+            }
+        }
+
+        .count-text {
+            color: #6c757d;
+            font-size: 0.6rem;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 2rem;
+            min-height: 200px;
+            text-align: center;
+            background: linear-gradient(135deg, var(--white-color) 0%, var(--snow-color) 100%);
+            border-radius: 16px;
+            border: 1px solid var(--gray-color);
+            box-shadow: 0 4px 12px rgba(119, 178, 201, 0.1);
+        }
+
+        .loading .spinner-border {
+            color: var(--primary-color);
+            width: 3rem;
+            height: 3rem;
+            border-width: 0.25rem;
+        }
+
+        .loading p {
+            color: var(--text-color);
+            font-weight: 500;
+            margin-bottom: 0;
+        }
+
+        .loading-spinner {
+            border: 4px solid var(--secondary-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Info Sections */
+        .info-section {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            color: #495057;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 12px;
+            padding-left: 8px;
+            border-left: 3px solid #B19CD9;
+        }
+
+        .d-flex.gap-2 {
+            padding: 6px 0;
             align-items: center;
         }
 
-        #diseaseTagPreview .tag .remove-tag {
-            margin-left: 8px;
-            cursor: pointer;
-            color: #dc3545;
-            font-weight: bold;
+        .d-flex.gap-2 strong {
+            color: #495057;
+            font-weight: 600;
+            min-width: 120px;
+            font-size: 14px;
+        }
+
+        .d-flex.gap-2 span {
+            color: #6c757d;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        /* Grid-5 Content Area Specific */
+        .grid-5-content-area {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .grid-5-content-area .card {
+            border: none;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .grid-5-content-area .card-body {
+            padding: 30px;
+        }
+
+        .col-4 .card {
+            height: 285px !important;
+            min-height: 285px !important;
+            max-height: 285px !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        .col-4 .card .card-body {
+            padding: 0 !important;
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 767.98px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-1,
+            .grid-2,
+            .grid-3,
+            .grid-4,
+            .grid-5,
+            .grid-7,
+            .grid-8,
+            .grid-9 {
+                grid-column: 1 / -1 !important;
+                grid-row: auto !important;
+                margin-top: 0 !important;
+                margin-bottom: 15px !important;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            .header-title {
+                font-size: 16px;
+                justify-content: center;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            .modern-table {
+                min-width: 800px;
+            }
+
+            .modern-table thead th,
+            .modern-table tbody td {
+                padding: 12px 8px;
+                font-size: 11px;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 991.98px) {
+            .main-grid {
+                grid-template-columns: repeat(6, 1fr);
+                grid-template-rows: auto auto auto auto auto;
+            }
+
+            .grid-1 {
+                grid-column: 1/4;
+                grid-row: 1;
+            }
+
+            .grid-2 {
+                grid-column: 4/7;
+                grid-row: 1;
+            }
+
+            .grid-3 {
+                grid-column: 1/4;
+                grid-row: 2;
+            }
+
+            .grid-4 {
+                grid-column: 4/7;
+                grid-row: 2;
+            }
+
+            .grid-5 {
+                grid-column: 1/7;
+                grid-row: 3;
+            }
+
+            .grid-7 {
+                grid-column: 1/7;
+                grid-row: 4;
+                height: 120px;
+            }
+
+            .grid-8 {
+                grid-column: 1/7;
+                grid-row: 5;
+                margin-top: 0;
+            }
+
+            .grid-9 {
+                grid-column: 1/6;
+                grid-row: 6;
+                margin-bottom: 30px;
+            }
+        }
+
+        @media (min-width: 992px) and (max-width: 1199.98px) {
+            .grid-5 {
+                grid-column: 1/10;
+            }
+
+            .grid-7 {
+                grid-column: 10/13;
+                grid-row: 2;
+                height: 120px;
+            }
+
+            .grid-8 {
+                grid-column: 10/13;
+                grid-row: 3;
+            }
+
+            .grid-9 {
+                grid-column: 1/10;
+                grid-row: 3;
+                margin-bottom: 30px;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .grid-5 {
+                grid-column: 1/10;
+            }
+
+            .grid-7 {
+                grid-column: 10/13;
+                grid-row: 2;
+                height: 120px;
+            }
+
+            .grid-8 {
+                grid-column: 10/13;
+                grid-row: 3;
+            }
+
+            .grid-9 {
+                grid-column: 1/10;
+                grid-row: 3;
+                margin-bottom: 30px;
+            }
         }
     </style>
+</head>
+
+<body class="hold-transition layout-fixed sidebar-collapse">
+    <div class="wrapper">
+        @include('themes.admin-hospital.navbarhospital')
+        @include('themes.admin-hospital.menuhospital')
+
+        <div class="content-wrapper mt-4">
+            <div class="container-fluid">
+                <div class="main-grid">
+
+                    <!-- Card 1 -->
+                    <div class="grid-item grid-1">
+                        <x-stat-card icon="user-md" title="OPD ยอดสะสมรายวัน" :value="$opdCount" />
+                    </div>
+
+                    <div class="grid-item grid-2">
+                        <x-stat-card icon="ambulance" title="ER ยอดสะสมรายวัน" :value="$erCount" />
+                    </div>
+
+                    <div class="grid-item grid-3">
+                        <x-stat-card icon="procedures" title="IPD ยอดสะสมรายวัน" :value="$ipdCount" />
+                    </div>
+
+                    <div class="grid-item grid-4">
+                        <x-stat-card icon="brain" title="จิตเวช นัดหมายวันนี้" value="56" />
+                    </div>
+
+                    <!-- Other grids -->
+                    <!-- แก้ไขส่วน Grid-5 -->
+                    <div class="grid-item large grid-5" style="height: 400px;">
+                        <div class="card bg-white rounded-3 shadow-sm p-2"
+                            style="height: 100%; display: flex; flex-direction: column; overflow: hidden;">
+
+                            <div class="grid-5-top-card">
+                                <div class="grid-5-tab-item active" data-grid5-content="grid5-content-ranking-chart">
+                                    สถิติการรักษารายวัน
+                                </div>
+                                <div class="grid-5-tab-item  " data-grid5-content="grid5-content-static-today">
+                                    สถิติโรคประจำเดือน<span id="currentMonth"></span>
+
+                                </div>
+                                <div class="grid-5-tab-item" data-grid5-content="grid5-content-enter-icd">
+                                    ระบุโรคเฝ้าระวัง
+                                </div>
+                            </div>
+
+                            <x-chartdonut-box />
 
 
 
+                            <div id="grid5-content-static-today" class="grid-5-content-area">
+                                <x-progressbarmonth />
+
+                            </div>
+
+                            <div id="grid5-content-enter-icd" class="grid-5-content-area">
+                                <!-- Header Tabs -->
+
+
+                                <!-- Main Content Area -->
+                                <x-barchartselect />
+
+
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <div class="grid-item grid-7">
+                        <div class="simple-card">
+                            <!-- Title -->
+                            <h5 class="card-title">
+                                <i class="fas fa-user-shield title-icon"></i>
+                                นัดหมายทหาร
+                            </h5>
+
+                            <!-- Stats -->
+                            <div class="stats-row">
+                                <div class="stat-line missed-line">
+                                    <span class="stat-label">
+                                        <i class="fas fa-exclamation-triangle stat-icon"></i>
+                                        ไม่มาตามนัด
+                                    </span>
+                                    <span class="stat-number missed">{{ $missedCount }}</span>
+                                </div>
+
+                                <div class="stat-line waiting-line">
+                                    <span class="stat-label">
+                                        <i class="fas fa-clock stat-icon"></i>
+                                        รอการนัดหมาย
+                                    </span>
+                                    <span class="stat-number waiting">{{ $sentCount }}</span>
+                                </div>
+                                <div class="stat-line waiting-line">
+                                    <span class="stat-label">
+                                        <i class="fas fa-clock stat-icon"></i>
+                                        รอการนัดหมาย
+                                    </span>
+                                    <span class="stat-number waiting">{{ $sentCount }}</span>
+                                </div>
+
+                            </div>
+
+                            <!-- Divider -->
+
+                            <!-- Button -->
+                            <a href="{{ url('hospital/appointments') }}" class="action-btn">
+                                <i class="fas fa-calendar-plus"></i>
+                                จัดการนัดหมาย
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Grid-8: กล่องนัดหมาย 3 ประเภท -->
+                    <div class="grid-item grid-8">
+                        <div class="card bg-white rounded-3 shadow-sm p-3" style="height: 95%;">
+                            <!-- Title -->
+
+                            <x-appointmenttoday :critical-appointments="$criticalAppointments"
+                                :appointments="$appointments" />
+                        </div>
+                    </div>
+                    <!-- แก้ไขส่วน Grid-9 -->
+                    <div class="grid-item extra-large grid-9" style="min-height: 680px; max-height: 680px;">
+                        <div class="card bg-white rounded-3 shadow-sm p-2" style="
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    ">
+                            <div class="top-card">
+                                <div class="top-card-item active" data-content="content1">ติดตามผู้ป่วย Admit</div>
+                                <div class="top-card-item" data-content="content2">รายการบันทึกนัดหมายวันนี้</div>
+                                <div class="top-card-item" data-content="content3">ค้นหานัดหมาย</div>
+                                <div class="top-card-item" data-content="content4">ค้นหาผู้ป่วย</div>
+                            </div>
+
+                            <!-- Content Areas - แก้ไขให้มีเพียง content1 เท่านั้นที่ active -->
+                            <div id="content1" class="content-area active">
+                                <x-followadmittable :patients="$admitPatients" title="รายชื่อผู้ป่วย IPD วันนี้"
+                                    viewAllUrl="/admin/patient/ipd" :maxRows="5" :showViewAll="true" />
+                            </div>
+
+                            <div id="content2" class="content-area">
+                                <x-makeappointmenttoday />
+                            </div>
+
+                            <!-- ❌ ลบ class "active" ออกจาก content3 -->
+                            <div id="content3" class="content-area"
+                                style="flex: 1; overflow-y: auto; overflow-x: hidden;padding: 15px; height: 0;">
+                                <x-searchappointment />
+                            </div>
+
+                            <!-- ❌ ลบ class "active" ออกจาก content4 -->
+                            <div id="content4" class="content-area" style="
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 15px;
+            height: 0;
+        ">
+                                <x-searchpatient />
+                            </div>
+                        </div>
+                    </div>
+
+                    @include('themes.scriptnotable')
+                    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 </body>
 
 </html>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-
-
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- ก่อนปิด </body> -->
+<script src="/js/components/searchappointment.js"></script>
 
 <script>
-    async function fetchTopDiseases() {
-        // ส่งคำขอไปที่ API
-        const response = await fetch('/all-top-diseases');
+    // JavaScript for Tab Functionality
+    document.addEventListener('DOMContentLoaded', function () {
+        const tabItems = document.querySelectorAll('.top-card-item');
+        const contentAreas = document.querySelectorAll('.content-area');
 
-        // ตรวจสอบว่าการตอบกลับสำเร็จหรือไม่
-        if (!response.ok) {
-            console.error('API error:', response.statusText);
-            return;
-        }
+        tabItems.forEach(item => {
+            item.addEventListener('click', function () {
+                // Remove active class from all tabs
+                tabItems.forEach(tab => tab.classList.remove('active'));
 
-        // ดึงข้อมูลจาก API
-        const data = await response.json();
+                // Add active class to clicked tab
+                this.classList.add('active');
 
-        // ตรวจสอบว่าได้รับข้อมูลแล้วหรือไม่
-        const labels = Object.keys(data); // ใช้รหัสโรคเป็น label
-        const values = Object.values(data).map(item => item.count); // จำนวนการพบโรค
+                // Hide all content areas
+                contentAreas.forEach(content => content.classList.remove('active'));
 
-        console.log(labels, values);  // ตรวจสอบว่า labels และ values ถูกต้อง
-
-        // กำหนด Context สำหรับการแสดงผลใน Canvas
-        const ctx = document.getElementById('topDiseasesChart').getContext('2d');
-
-        // สร้างกราฟ
-        new Chart(ctx, {
-            type: 'bar',  // กราฟแบบแท่ง
-            data: {
-                labels: labels,  // รหัสโรค
-                datasets: [{
-                    label: 'Top 5 Diseases',  // ชื่อ Dataset
-                    data: values,  // จำนวนการพบโรค
-                    backgroundColor: [
-                        'rgba(54, 162, 235, 1)',  // สีฟ้า (ทึบ)
-                        'rgba(255, 99, 132, 1)',  // สีแดง (ทึบ)
-                        'rgba(75, 192, 192, 1)',  // สีเขียว (ทึบ)
-                        'rgba(153, 102, 255, 1)', // สีม่วง (ทึบ)
-                        'rgba(255, 159, 64, 1)'   // สีส้ม (ทึบ)
-                    ],
-                    borderColor: [
-                        'rgba(54, 162, 235, 1)',  // สีฟ้า (ทึบ)
-                        'rgba(255, 99, 132, 1)',  // สีแดง (ทึบ)
-                        'rgba(75, 192, 192, 1)',  // สีเขียว (ทึบ)
-                        'rgba(153, 102, 255, 1)', // สีม่วง (ทึบ)
-                        'rgba(255, 159, 64, 1)'   // สีส้ม (ทึบ)
-                    ],
-                    borderWidth: 1  // ขนาดของเส้นขอบ
-                }]
-            },
-            options: {
-                responsive: true,  // ทำให้กราฟตอบสนองต่อขนาดหน้าจอ
-                scales: {
-                    y: {
-                        beginAtZero: true,  // เริ่มต้นจากศูนย์
-                        ticks: {
-                            stepSize: 1  // กำหนดช่วงของค่าในแกน Y
-                        }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            // แสดงชื่อโรคเมื่อ hover
-                            label: function (tooltipItem) {
-                                const diseaseCode = tooltipItem.label;  // รหัสโรคที่ hover
-                                const diseaseInfo = data[diseaseCode];  // ดึงข้อมูลจาก data ตามรหัสโรค
-
-                                if (diseaseInfo) {
-                                    const diseaseName = diseaseInfo.name;  // ชื่อโรค
-                                    const count = diseaseInfo.count;  // จำนวน
-                                    return `${diseaseName} (${diseaseCode}): ${count}`;  // แสดงผลใน tooltip
-                                }
-                                return "Unknown disease";  // กรณีไม่มีข้อมูล
-                            }
-                        }
-                    }
+                // Show selected content area
+                const targetContent = document.getElementById(this.dataset.content);
+                if (targetContent) {
+                    targetContent.classList.add('active');
                 }
-            }
-        });
-    }
 
-    // เรียกฟังก์ชัน fetchTopDiseases เมื่อโหลดหน้า
-    window.onload = function () {
-        fetchTopDiseases();
-    };
-
-    let diseaseChart = null;
-    let diseaseCodes = [];
-
-    const tagInput = document.getElementById('diseaseCodes');
-    const tagPreview = document.getElementById('diseaseTagPreview');
-
-    // เพิ่ม tag เมื่อกด Enter / Space / Comma
-    tagInput.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter' || event.key === ' ' || event.key === ',') {
-            event.preventDefault();
-            const value = tagInput.value.trim().toUpperCase();
-            if (value && !diseaseCodes.includes(value)) {
-                diseaseCodes.push(value);
-                renderTags();
-            }
-            tagInput.value = '';
-        }
-    });
-
-    // สร้าง tag HTML
-    function renderTags() {
-        tagPreview.innerHTML = '';
-        diseaseCodes.forEach((code, index) => {
-            const tag = document.createElement('span');
-            tag.className = 'tag';
-            tag.innerHTML = `${code}<span class="remove-tag" data-index="${index}">&times;</span>`;
-            tagPreview.appendChild(tag);
-        });
-
-        document.querySelectorAll('.remove-tag').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const i = this.getAttribute('data-index');
-                diseaseCodes.splice(i, 1);
-                renderTags();
+                // Optional: Call different functions based on selection
+                handleTabChange(this.dataset.content);
             });
         });
-    }
-
-    function getDiseaseCodeString() {
-        return diseaseCodes.join(',');
-    }
-
-    // จัดการเลือกช่วงวันที่
-    document.getElementById('dateOption').addEventListener('change', function () {
-        const show = this.value === 'range';
-        document.getElementById('dateRangeInputs').style.display = show ? 'flex' : 'none';
     });
 
-    // เปิด Modal
-    document.getElementById('openPopup').addEventListener('click', function () {
-        const modal = new bootstrap.Modal(document.getElementById('diseaseModal'));
-        modal.show();
-    });
+</script>
 
-    // เมื่อกดปุ่มแสดงข้อมูล
-    document.getElementById('fetchData').addEventListener('click', async function () {
-        await fetchSelectedDiseases();
-        const modal = bootstrap.Modal.getInstance(document.getElementById('diseaseModal'));
-        modal.hide();
-    });
 
-    document.getElementById('clearTagsBtn').addEventListener('click', function () {
-        diseaseCodes = [];
-        renderTags();
-        tagInput.value = '';
-    });
 
-    window.onload = function () {
-        fetchTopDiseases();
-    };
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // ระบบ Tab สำหรับ Grid-5
+        const grid5TabItems = document.querySelectorAll('[data-grid5-content]');
+        const grid5ContentAreas = document.querySelectorAll('.grid-5-content-area');
 
-    // ฟังก์ชันดึงข้อมูลรหัสโรคที่เลือก
-    async function fetchSelectedDiseases() {
-        const codes = getDiseaseCodeString();
-        const dateOption = document.getElementById('dateOption').value;
+        grid5TabItems.forEach(item => {
+            item.addEventListener('click', function () {
+                // Remove active class from all Grid-5 tabs
+                grid5TabItems.forEach(tab => tab.classList.remove('active'));
 
-        let startDate = '';
-        let endDate = '';
+                // Add active class to clicked tab
+                this.classList.add('active');
 
-        if (!codes) {
-            document.getElementById('noDiseaseMessage').style.display = 'block';
-            document.getElementById('diseaseGraph').style.display = 'none';
-            return;
-        }
+                // Hide all Grid-5 content areas
+                grid5ContentAreas.forEach(content => {
+                    content.classList.remove('active');
+                    content.style.display = 'none';
+                });
 
-        if (dateOption === 'today') {
-            const today = new Date().toISOString().split('T')[0];
-            startDate = endDate = today;
-        } else if (dateOption === 'range') {
-            startDate = document.getElementById('startDate').value;
-            endDate = document.getElementById('endDate').value;
-
-            if (!startDate || !endDate) {
-                alert('กรุณาระบุวันที่เริ่มต้นและสิ้นสุด');
-                return;
-            }
-        }
-
-        document.getElementById('noDiseaseMessage').style.display = 'none';
-        document.getElementById('diseaseGraph').style.display = 'block';
-
-        const queryParams = new URLSearchParams({
-            codes: codes,
-            start: startDate,
-            end: endDate
-        });
-
-        const response = await fetch(`/get-diseases-data?${queryParams.toString()}`);
-        if (!response.ok) {
-            alert('เกิดข้อผิดพลาดในการดึงข้อมูล');
-            return;
-        }
-
-        const data = await response.json();
-
-        // สร้าง labels, values, colors สำหรับกราฟ
-        const allLabels = diseaseCodes.map(code => {
-            const found = data.find(d => d.disease_code === code);
-            return found ? found.disease_code : `${code}`;
-        });
-
-        const allValues = diseaseCodes.map(code => {
-            const found = data.find(d => d.disease_code === code);
-            return found ? found.count : 0; // ใช้จำนวนเต็ม
-        });
-
-        // กำหนดสีแบบสุ่มหรือตามลำดับ
-        const colors = ['rgba(54, 162, 235, 0.8)', 'rgba(255, 99, 132, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)'];
-        const allColors = diseaseCodes.map((code, index) => colors[index % colors.length]); // ใช้สีจาก array
-
-        const allBorders = allColors.map(color => color.replace('0.8', '1'));
-
-        if (diseaseChart) {
-            diseaseChart.destroy();
-        }
-
-        const ctx = document.getElementById('diseaseGraph').getContext('2d');
-        diseaseChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: allLabels,
-                datasets: [{
-                    label: 'Top Diseases',
-                    data: allValues,
-                    backgroundColor: allColors,
-                    borderColor: allBorders,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1, // กำหนดให้เป็นจำนวนเต็ม
-                            callback: function (value) {
-                                return Math.floor(value);  // ปัดเศษให้เป็นจำนวนเต็ม
-                            }
-                        }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function (tooltipItem) {
-                                const label = tooltipItem.label;
-                                const value = tooltipItem.raw;
-                                // แสดงชื่อโรค, รหัสโรค, และจำนวน
-                                const disease = data.find(d => d.disease_code === label);
-                                const diseaseName = disease ? disease.name : 'ไม่มีข้อมูล';
-                                return `${diseaseName} (${label}): ${value}`;
-                            }
-                        }
-                    }
+                // Show selected Grid-5 content area
+                const targetContentId = this.getAttribute('data-grid5-content');
+                const targetContent = document.getElementById(targetContentId);
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                    targetContent.style.display = 'block';
                 }
-            }
+
+                console.log('Grid-5 tab clicked:', targetContentId);
+            });
         });
-    }
 
+        // ระบบ Tab สำหรับ Grid-9 (ใช้ชื่อเดิม)
+        const grid9TabItems = document.querySelectorAll('[data-content]');
+        const grid9ContentAreas = document.querySelectorAll('.content-area');
 
+        grid9TabItems.forEach(item => {
+            item.addEventListener('click', function () {
+                // Remove active class from all Grid-9 tabs
+                grid9TabItems.forEach(tab => tab.classList.remove('active'));
+
+                // Add active class to clicked tab
+                this.classList.add('active');
+
+                // Hide all Grid-9 content areas
+                grid9ContentAreas.forEach(content => {
+                    content.classList.remove('active');
+                    content.style.display = 'none';
+                });
+
+                // Show selected Grid-9 content area
+                const targetContentId = this.getAttribute('data-content');
+                const targetContent = document.getElementById(targetContentId);
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                    targetContent.style.display = 'block';
+                }
+
+                console.log('Grid-9 tab clicked:', targetContentId);
+            });
+        });
+    });
 </script>

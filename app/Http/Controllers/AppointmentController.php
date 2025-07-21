@@ -111,16 +111,31 @@ class AppointmentController extends Controller
         ]);
 
         $appointment = Appointment::findOrFail($id);
+
+        // ✅ อัปเดตข้อมูล appointment
         $appointment->update([
             'appointment_date' => $request->appointment_date,
             'appointment_location' => $request->appointment_location,
             'case_type' => $request->case_type,
-            'status' => 'scheduled' // ✅ เพิ่มบรรทัดนี้ให้แก้ status เสมอ
-
+            'status' => 'scheduled'
         ]);
+
+        // ✅ ตรวจสอบว่ามี checkin ที่เกี่ยวข้องหรือยัง
+        $checkin = $appointment->checkin;
+        if ($checkin) {
+            // อัปเดต checkin ที่มีอยู่
+            $checkin->update(['checkin_status' => 'not-checked-in']);
+        } else {
+            // ถ้ายังไม่มี ให้สร้างใหม่
+            $appointment->checkin()->create([
+                'checkin_status' => 'not-checked-in',
+                'checkin_time' => now()
+            ]);
+        }
 
         return response()->json(['status' => 'success', 'message' => 'บันทึกการแก้ไขสำเร็จ']);
     }
+
 
 
 

@@ -14,14 +14,15 @@
                     <!-- Section: ผลัด -->
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h3 class="card-title font-weight-bold m-0">ผลัด</h3>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRotationModal">
-                            เพิ่มผลัด
+                        <button class="btn btn-primary ml-auto" data-bs-toggle="modal"
+                            data-bs-target="#addRotationModal">
+                            + เพิ่มผลัด
                         </button>
                     </div>
                     <div class="card">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table id="rotationTable" class="table table-bordered table-striped">
+                                <table class="table table-striped table-bordered data-table">
                                     <thead>
                                         <tr>
                                             <th>ชื่อหน่วยฝึก</th>
@@ -65,7 +66,8 @@
                     </div>
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h3 class="card-title font-weight-bold m-0">หน่วยฝึก</h3>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTrainingUnitModal">
+                        <button class="btn btn-primary ml-auto" data-bs-toggle="modal"
+                            data-bs-target="#addTrainingUnitModal">
                             + เพิ่มหน่วยฝึก
                         </button>
                     </div>
@@ -74,7 +76,7 @@
 
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table id="unitTable" class="table table-bordered table-striped">
+                                <table class="table table-striped table-bordered data-table">
                                     <thead>
                                         <tr>
                                             <th>ชื่อหน่วยฝึก</th>
