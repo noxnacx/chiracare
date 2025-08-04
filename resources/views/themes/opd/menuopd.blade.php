@@ -38,15 +38,22 @@
 
 
                 <li class="nav-item menu-open">
-                    <a href="{{ url('/rotation_training') }}" class="nav-link">
-                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                    <a href="{{ url('/opd/appointments') }}" class="nav-link">
+                        <i class="nav-icon fas fa-calendar-check"></i>
+                        <p>ติดตามนัดหมาย</p>
+                    </a>
+                </li>
+
+                <li class="nav-item menu-open">
+                    <a href="{{ url('opd/view-checkin') }}" class="nav-link">
+                        <i class="nav-icon fas fa-notes-medical"></i>
                         <p>ตารางวินิจฉัย</p>
                     </a>
                 </li>
 
                 <li class="nav-item menu-open">
-                    <a href="{{ route('hospital.statistics') }}" class="nav-link">
-                        <i class="nav-icon fas fa-file-medical"></i>
+                    <a href="{{ route('opd.diagnosis.stats') }}" class="nav-link">
+                        <i class="nav-icon fas fa-history"></i>
                         <p>ประวัติการรักษา</p>
                     </a>
                 </li>

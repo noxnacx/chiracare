@@ -19,6 +19,8 @@ class MedicalDiagnosis extends Model
         'department_type', // ต้องมีค่านี้
         'medical_report_id',
         'vital_signs_id',
+        'training_instruction',
+
     ];
 
     // เชื่อมโยงกับ Treatment

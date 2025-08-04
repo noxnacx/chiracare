@@ -1,0 +1,109 @@
+ :root {
+     --primary-color: #77B2C9;
+     --secondary-color: #D6E7EE;
+     --accent-color: #f3e8ff;
+     --text-color: #222429;
+     --gray-color: rgb(232, 232, 232);
+     --white-color: #FFFFFF;
+     --snow-color: #f9f9f9;
+ }
+
+ count-badge {
+     /* ไม่มีพื้นหลัง (transparent) */
+     border: 1px solid var(--accent-color, #f3e8ff);
+     /* กรอบสีจาก --accent-color */
+     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+     /* เงา */
+     padding: 0.15rem 0.5rem;
+     /* ขนาดภายใน */
+     border-radius: 0.25rem;
+     /* มุมโค้ง */
+     color: inherit;
+     /* สีตาม parent */
+     display: inline-flex;
+     align-items: center;
+ }
+
+ .box-search {
+     background-color: #fff;
+     height: 680px;
+     border-radius: 15px;
+     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+ }
+
+ .box-search>.flex-fill {
+     height: 50% !important;
+     /* บังคับครึ่งเท่าๆ */
+     flex: none !important;
+ }
+
+ .card {
+     border: none;
+     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+ }
+
+ .card-header {
+     padding: 0.75rem 1rem;
+ }
+
+ .card-header h6 {
+     font-weight: 600;
+     font-size: 0.9rem;
+ }
+
+ .card-body {
+     flex: 1;
+     display: flex;
+     flex-direction: column;
+ }
+
+ .patient-card {
+     font-size: 0.85rem;
+     transition: all 0.2s ease;
+     border: 1px solid #dee2e6;
+     border-radius: 8px;
+     padding: 0.4rem;
+ }
+
+ .patient-card:hover {
+     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+     transform: translateY(-1px);
+ }
+
+ .card-body::-webkit-scrollbar {
+     width: 6px;
+ }
+
+ .card-body::-webkit-scrollbar-thumb {
+     background: #ccc;
+     border-radius: 3px;
+ }
+
+ .badge {
+     font-size: 0.7rem;
+     padding: 0.25rem 0.5rem;
+ }
+
+
+ .box-admit {
+     background-color: #fff;
+     min-height: 680px;
+     border-radius: 15px;
+     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+ }
+
+
+ /* Section Titles */
+ .section-title {
+     color: #495057;
+     font-weight: 600;
+     font-size: 18px;
+     margin-bottom: 16px;
+     padding-left: 8px;
+     border-left: 3px solid #B19CD9;
+ }
+
+ .patient-info-sections {
+     margin-top: 16px;
+ }

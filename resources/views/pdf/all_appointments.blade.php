@@ -5,15 +5,18 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>รายงานการนัดหมาย</title>
     <style>
-        /* ตั้งค่าพื้นฐาน */
-        body {
-            font-family: 'Sarabun', sans-serif;
-            margin: 0;
-            padding: 20px;
-            line-height: 1.5;
+        * {
+            font-family: "Sarabun", DejaVu Sans, sans-serif;
         }
 
-        /* หัวข้อหลัก */
+        body {
+            margin: 0;
+            padding: 20px;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #000;
+        }
+
         h2 {
             text-align: center;
             margin-bottom: 25px;
@@ -22,16 +25,13 @@
             color: #333;
         }
 
-        /* ตาราง */
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
             margin-bottom: 20px;
             page-break-inside: auto;
         }
 
-        /* หัวตาราง */
         thead th {
             background-color: #f5f5f5;
             font-weight: bold;
@@ -40,7 +40,6 @@
             text-align: center;
         }
 
-        /* เนื้อตาราง */
         tbody td {
             padding: 8px;
             border: 1px solid #ddd;
@@ -48,12 +47,10 @@
             vertical-align: middle;
         }
 
-        /* แถวตาราง */
         tbody tr:nth-child(even) {
             background-color: #f9f9f9;
         }
 
-        /* ส่วนท้ายเอกสาร */
         .footer {
             margin-top: 30px;
             text-align: right;
@@ -61,7 +58,6 @@
             color: #666;
         }
 
-        /* ป้องกันการตัดคำภาษาไทย */
         td,
         th {
             word-break: keep-all;
@@ -88,8 +84,7 @@
         <tbody>
             @foreach ($appointments as $a)
                 <tr>
-                    <td>
-                        {{ $a->medicalReport->soldier->first_name ?? '-' }}
+                    <td>{{ $a->medicalReport->soldier->first_name ?? '-' }}
                         {{ $a->medicalReport->soldier->last_name ?? '-' }}
                     </td>
                     <td>{{ $a->medicalReport->soldier->rotation->rotation_name ?? '-' }}</td>

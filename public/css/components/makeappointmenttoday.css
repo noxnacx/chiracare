@@ -1,0 +1,132 @@
+/* Make Appointment Today Component Styles */
+
+.patient-id-cell {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.patient-name-cell {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.unit-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin: 2px;
+    border: 1px solid;
+}
+
+.rotation-badge {
+    background: var(--secondary-color);
+    color: var(--text-color);
+    border-color: var(--primary-color);
+}
+
+.training-badge {
+    background: linear-gradient(135deg, var(--accent-color), rgba(243, 232, 255, 0.5));
+    color: #7c3aed;
+    border-color: #a855f7;
+}
+
+.risk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.85em;
+    font-weight: 500;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+}
+
+.risk-badge:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+    transition: all 0.3s ease;
+}
+
+.risk-bullet {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.risk-text {
+    color: #333;
+}
+
+.green .risk-bullet {
+    background-color: #27ae60;
+}
+
+.yellow .risk-bullet {
+    background-color: #f39c12;
+}
+
+.red .risk-bullet {
+    background-color: #e74c3c;
+}
+
+.medical-report-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 8px;
+    border-radius: 16px;
+    font-size: 0.85em;
+    font-weight: 500;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+}
+
+.medical-report-status-badge:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+    transition: all 0.3s ease;
+}
+
+.status-bullet {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-text {
+    color: #333;
+}
+
+.sent .status-bullet {
+    background-color: #FF9800;
+}
+
+.approved .status-bullet {
+    background-color: #4CAF50;
+}
+
+.appointment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    font-size: 12px;
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.appointment-avatar:has(.profile-image) {
+    background: white !important;
+    border: 2px solid currentColor;
+}

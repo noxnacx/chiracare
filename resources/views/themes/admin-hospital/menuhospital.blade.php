@@ -52,6 +52,12 @@
                         <p>นัดหมายทหาร</p>
                     </a>
                 </li>
+                <li class="nav-item menu-open">
+                    <a href="{{ url('/admin/patient/admit') }}" class="nav-link">
+                        <i class="nav-icon fas fa-procedures"></i>
+                        <p>ติดตามผู้ป่วย Admit</p>
+                    </a>
+                </li>
 
                 <!-- ประวัติการรักษา -->
                 <li class="nav-item menu-open">
@@ -63,7 +69,7 @@
 
                 <!-- สถิติและรายงาน -->
                 <li class="nav-item menu-open">
-                    <a href="/admin/hospital/static" class="nav-link">
+                    <a href="/admin/static-table" class="nav-link">
                         <i class="nav-icon fas fa-chart-bar"></i>
                         <p>สถิติและรายงาน</p>
                     </a>
@@ -75,7 +81,16 @@
                     </a>
                 </li>
                 <!-- สถิติและรายงาน -->
-
+                <li class="nav-item menu-open">
+                    <form action="{{ route('logout') }}" method="POST" id="logout-form">
+                        @csrf
+                        <a href="#" class="nav-link"
+                            onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                            <i class="nav-icon fas fa-sign-out-alt"></i>
+                            <p>ออกจากระบบ</p>
+                        </a>
+                    </form>
+                </li>
             </ul>
         </nav>
 

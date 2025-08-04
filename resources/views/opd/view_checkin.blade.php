@@ -194,12 +194,22 @@
                                                     <strong>สถานที่ :</strong> {{ $appointment->appointment_location }}
                                                 </td>
                                                 <td>
-                                                    @if (!is_null($appointment->checkin) && $appointment->checkin->checkin_status === 'checked-in')
-                                                        <span
-                                                            class="badge checked-in shadow bg-light text-dark">🟢เข้ารับการรักษาแล้ว</span>
+                                                    @php
+                                                        $checkin = $appointment->checkin ?? null;
+                                                        $treatmentStatus = $checkin && $checkin->treatment ? $checkin->treatment->treatment_status : null;
+                                                    @endphp
+
+                                                    @if (is_null($checkin) || $checkin->checkin_status === 'not-checked-in')
+                                                        <span class="badge not-checked-in shadow bg-light text-dark">🟠
+                                                            ยังไม่ได้เข้ารับการรักษา</span>
+                                                    @elseif ($checkin->checkin_status === 'checked-in' && $treatmentStatus === 'not-treated')
+                                                        <span class="badge checked-in shadow bg-light text-dark">🟡
+                                                            อยู่ระหว่างการรักษา</span>
+                                                    @elseif ($checkin->checkin_status === 'checked-in' && $treatmentStatus === 'treated')
+                                                        <span class="badge treated shadow bg-light text-dark">🟢
+                                                            รักษาเสร็จสิ้น</span>
                                                     @else
-                                                        <span class="badge not-checked-in shadow bg-light text-dark">
-                                                            🟠ยังไม่ได้เข้ารับการรักษา</span>
+                                                        <span class="badge shadow bg-light text-dark">⚪ สถานะไม่ระบุ</span>
                                                     @endif
 
                                                 </td>

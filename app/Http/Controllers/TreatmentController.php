@@ -109,9 +109,11 @@ class TreatmentController extends Controller
     {
         $treatmentId = $request->input('treatmentId');
 
-        // ค้นหา treatment พร้อมข้อมูล medicalReport และ vitalSign
         $treatment = Treatment::with('checkin.appointment.medicalReport.soldier', 'checkin.appointment.medicalReport.vitalSign')
             ->find($treatmentId);
+
+        $isFollowUp = false;
+        $followUpAppointment = null;
 
         if ($treatment && $treatment->checkin && $treatment->checkin->appointment && $treatment->checkin->appointment->medicalReport) {
             $soldier = $treatment->checkin->appointment->medicalReport->soldier;
@@ -119,16 +121,39 @@ class TreatmentController extends Controller
             $soldierUnit = $soldier->affiliated_unit ?? 'ไม่ระบุ';
             $soldierRotation = $soldier->rotation_id ?? 'ไม่ระบุ';
             $soldierTraining = $soldier->training_unit_id ?? 'ไม่ระบุ';
-            // ดึงข้อมูล vitalSign
+
             $vitalSign = $treatment->checkin->appointment->medicalReport->vitalSign;
             $temperature = $vitalSign->temperature ?? '-';
             $bloodPressure = $vitalSign->blood_pressure ?? '-';
             $heartRate = $vitalSign->heart_rate ?? '-';
+
+            // ✅ ตรวจสอบว่ามี follow-up appointment ที่ยังไม่ดำเนินการ
+            $followUpAppointment = Appointment::where('medical_report_id', $treatment->checkin->appointment->medicalReport->id)
+                ->where('is_follow_up', true)
+                ->where('status', 'scheduled')
+                ->latest('appointment_date')
+                ->first();
+
+            $isFollowUp = $followUpAppointment !== null;
+
+            // ✅ บันทึกลง log เพื่อตรวจสอบ
+            if ($followUpAppointment) {
+                Log::info('พบการนัดหมาย Follow-up', [
+                    'treatment_id' => $treatmentId,
+                    'appointment_id' => $followUpAppointment->id,
+                    'appointment_date' => $followUpAppointment->appointment_date,
+                    'appointment_location' => $followUpAppointment->appointment_location,
+                    'case_type' => $followUpAppointment->case_type,
+                ]);
+            } else {
+                Log::info("ไม่มีการนัดหมาย Follow-up สำหรับ treatment_id: {$treatmentId}");
+            }
         } else {
-            // กรณีไม่พบข้อมูล
             $soldierName = 'ไม่พบข้อมูลทหาร';
             $soldierUnit = $soldierRotation = $soldierTraining = 'ไม่พบข้อมูล';
             $temperature = $bloodPressure = $heartRate = '-';
+
+            Log::warning("ไม่พบข้อมูล treatment หรือ medical report สำหรับ treatment_id: {$treatmentId}");
         }
 
         return view('opd.diagnosis-form', compact(
@@ -139,10 +164,11 @@ class TreatmentController extends Controller
             'temperature',
             'bloodPressure',
             'heartRate',
-            'treatmentId'
+            'treatmentId',
+            'isFollowUp',
+            'followUpAppointment'
         ));
     }
-
     public function updateVitalSign(Request $request, $treatmentId)
     {
         // ค้นหาข้อมูล Treatment
@@ -177,7 +203,7 @@ class TreatmentController extends Controller
             return response()->json(['message' => 'ไม่พบข้อมูลการรักษา'], 404);
         }
 
-        // ค้นหา soldier_id จาก medicalReport ที่เชื่อมโยงกับ Treatment
+        // ค้นหา soldier จาก medicalReport ที่เชื่อมโยงกับ Treatment
         $soldier = $treatment->checkin->appointment->medicalReport->soldier;
 
         if (!$soldier) {
@@ -187,42 +213,39 @@ class TreatmentController extends Controller
         // ค้นหา medicalReport เก่าที่เชื่อมโยงกับ Treatment
         $oldMedicalReport = $treatment->checkin->appointment->medicalReport;
 
-        // ตรวจสอบว่า oldMedicalReport มีข้อมูล
         if (!$oldMedicalReport) {
             Log::info('ไม่พบข้อมูล oldMedicalReport');
             return response()->json(['message' => 'ไม่พบข้อมูล medical_report เก่า'], 404);
         }
 
-        // ตรวจสอบค่าของ ID
         Log::info('Old Medical Report ID: ' . $oldMedicalReport->id);
 
-        // สร้าง Medical Report ใหม่สำหรับ Follow-up พร้อม previous_report_id
+        // สร้าง Medical Report ใหม่สำหรับ Follow-up
         $newMedicalReport = MedicalReport::create([
-            'soldier_id' => $soldier->id, // ใช้ soldier_id จากข้อมูล soldier
-            'symptom_description' => 'นัดติดตามอาการ', // เปลี่ยนเป็นคำว่า "นัดติดตามอาการ"
+            'soldier_id' => $soldier->id,
+            'symptom_description' => 'นัดติดตามอาการ',
             'status' => 'approved',
             'report_date' => now(),
-            'previous_report_id' => $oldMedicalReport->id, // เพิ่ม previous_report_id ตอนที่สร้าง
+            'previous_report_id' => $oldMedicalReport->id,
         ]);
 
-        // ตรวจสอบว่า previous_report_id ถูกอัปเดต
         Log::info('New Medical Report previous_report_id (after creation): ' . $newMedicalReport->previous_report_id);
 
-        // สร้าง VitalSign ใหม่ที่เชื่อมโยงกับ Medical Report ที่สร้าง
+        // สร้าง VitalSign ใหม่
         $newVitalSign = VitalSign::create([
-            'temperature' => null, // ตั้งค่าทุกค่าของ VitalSign เป็น null ยกเว้น id
+            'temperature' => null,
             'blood_pressure' => null,
             'heart_rate' => null,
-            'source' => 'appointment', // กำหนดแหล่งข้อมูล
-            'risk_level' => null, // คุณสามารถเพิ่มหรือปรับได้ตามที่ต้องการ
+            'source' => 'appointment',
+            'risk_level' => null,
         ]);
 
-        // เชื่อมโยง VitalSign กับ MedicalReport
+        // อัปเดต MedicalReport ให้เชื่อมกับ VitalSign
         $newMedicalReport->update(['vital_signs_id' => $newVitalSign->id]);
 
-        // สร้าง Appointment ใหม่สำหรับ Follow-up
+        // สร้าง Appointment สำหรับ follow-up
         $newAppointment = Appointment::create([
-            'medical_report_id' => $newMedicalReport->id, // เชื่อมโยงกับ Medical Report ที่สร้าง
+            'medical_report_id' => $newMedicalReport->id,
             'appointment_date' => $request->appointment_date,
             'appointment_location' => $request->appointment_location,
             'case_type' => $request->case_type,
@@ -230,14 +253,31 @@ class TreatmentController extends Controller
             'is_follow_up' => 1,
         ]);
 
-        // เชื่อมโยง Medical Report ใหม่กับ Appointment ใหม่
+        // เชื่อม Medical Report กับ Appointment
         $newMedicalReport->update(['appointment_id' => $newAppointment->id]);
+
+        // สร้าง Checkin สำหรับนัดหมายใหม่นี้
+        $checkin = Checkin::create([
+            'appointment_id' => $newAppointment->id,
+            'checkin_status' => 'not-checked-in',
+            'checkin_time' => now(),
+        ]);
+
+        // ✅ หากนัดหมายเดิมเสร็จสิ้น อัปเดตสถานะ treatment เป็น treated
+        $appointment = $treatment->checkin->appointment;
+
+        if ($appointment && $appointment->status === 'completed') {
+            $treatment->treatment_status = 'treated';
+            $treatment->save();
+            Log::info('เปลี่ยนสถานะ treatment เป็น treated สำเร็จ');
+        }
 
         return response()->json([
             'message' => 'สร้างการนัดหมายใหม่และ Medical Report ใหม่สำหรับ Follow-up สำเร็จ',
             'appointment' => $newAppointment,
             'medical_report' => $newMedicalReport,
-            'vital_sign' => $newVitalSign, // ส่งกลับข้อมูลของ VitalSign ที่สร้าง
+            'vital_sign' => $newVitalSign,
+            'checkin' => $checkin
         ]);
     }
 
@@ -258,6 +298,7 @@ class TreatmentController extends Controller
             'appointment_date' => 'nullable|date', // กรณี Follow-up
             'appointment_location' => 'nullable|string',
             'case_type' => 'nullable|in:normal,critical',
+            'training_instruction' => 'nullable|string|max:255',
         ]);
 
         // ค้นหาข้อมูลโรคในฐานข้อมูล
@@ -316,23 +357,7 @@ class TreatmentController extends Controller
                 Log::error('ไม่พบข้อมูล Medical Report สำหรับ soldier_id: ' . $appointment->soldier_id);
                 throw new \Exception("ไม่พบข้อมูล Medical Report สำหรับ soldier_id: {$appointment->soldier_id}");
             }
-            // เพิ่มข้อมูลการวินิจฉัยในตาราง medical_diagnosis สำหรับกรณี "Admit"
-            if ($request->treatment_status === 'Admit') {
-                $admitDiagnosis = MedicalDiagnosis::create([
-                    'treatment_id' => $request->treatment_id,
-                    'doctor_name' => $request->doctor_name,
-                    'treatment_status' => 'Admit',
-                    'department_type' => 'ipd',
-                    'vital_signs_id' => $vitalSign->id,
-                    'diagnosis_date' => now(),
-                    'notes' => $request->notes
-                ]);
 
-                // เพิ่มข้อมูลในตาราง medical_diagnosis_diseases สำหรับการวินิจฉัย "Admit"
-                foreach ($diseases as $disease) {
-                    $admitDiagnosis->diseases()->attach($disease->id);
-                }
-            }
             // สร้างข้อมูลการวินิจฉัยในตาราง medical_diagnosis
             $diagnosis = MedicalDiagnosis::create([
                 'treatment_id' => $request->treatment_id,
@@ -341,12 +366,30 @@ class TreatmentController extends Controller
                 'department_type' => $departmentType,
                 'vital_signs_id' => $vitalSign->id,
                 'diagnosis_date' => now(),
-                'notes' => $request->notes
+                'notes' => $request->notes,
+                'training_instruction' => $request->input('training_instruction'),
             ]);
 
             // เพิ่มข้อมูลในตาราง medical_diagnosis_diseases
             foreach ($diseases as $disease) {
                 $diagnosis->diseases()->attach($disease->id);
+            }
+            // เพิ่มข้อมูลการวินิจฉัยในตาราง medical_diagnosis สำหรับกรณี "Admit"
+            if ($request->treatment_status === 'Admit') {
+                $admitDiagnosis = MedicalDiagnosis::create([
+                    'treatment_id' => $request->treatment_id,
+                    'doctor_name' => $request->doctor_name,
+                    'treatment_status' => 'Admit',
+                    'department_type' => 'ipd',
+                    'vital_signs_id' => $vitalSign->id,
+                    'diagnosis_date' => now(), // เพื่อไม่ให้เวลาชนกัน
+                    'notes' => $request->notes,
+                ]);
+
+                // เพิ่มข้อมูลในตาราง medical_diagnosis_diseases สำหรับการวินิจฉัย "Admit"
+                foreach ($diseases as $disease) {
+                    $admitDiagnosis->diseases()->attach($disease->id);
+                }
             }
             if ($request->treatment_status === 'Follow-up' && $request->appointment_date) {
                 // สร้าง Medical Report และ Appointment ใหม่สำหรับ Follow-up
@@ -402,5 +445,6 @@ class TreatmentController extends Controller
 
         return response()->json(['diseases' => $diseaseDescriptions]);
     }
+
 }
 

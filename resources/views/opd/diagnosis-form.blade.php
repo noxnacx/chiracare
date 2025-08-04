@@ -21,6 +21,22 @@
 
             <div class="modal-body">
                 <div class="container">
+                    @if ($isFollowUp && $followUpAppointment)
+                        <div class="card shadow-sm mb-4 border-start border-4 border-info">
+                            <div class="card-header bg-info text-white">
+                                <i class="fas fa-calendar-check me-2"></i>ข้อมูลการติดตามอาการ (Follow-up)
+                            </div>
+                            <div class="card-body">
+                                <p><strong>วันนัดหมาย:</strong>
+                                    {{ \Carbon\Carbon::parse($followUpAppointment->appointment_date)->format('d/m/Y H:i') }}
+                                </p>
+                                <p><strong>สถานที่:</strong> {{ $followUpAppointment->appointment_location }}</p>
+                                <p><strong>ประเภทผู้ป่วย:</strong>
+                                    {{ $followUpAppointment->case_type === 'critical' ? 'วิกฤติ' : 'ปกติ' }}
+                                </p>
+                            </div>
+                        </div>
+                    @endif
                     <!-- แสดงข้อมูลทหาร -->
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-white">
@@ -163,7 +179,7 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-6" id="patientTypeDiv">
                                         <div class="form-group">
                                             <label for="patientType" class="form-label"><i
                                                     class="fas fa-user-injured mr-2"></i>ประเภทผู้ป่วย:</label>
@@ -176,8 +192,25 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                            {{-- 🔹 คำสั่งฝึก (เฉพาะ Follow-up และ Discharge) --}}
+                            <div id="trainingInstructionDiv" class="form-group mt-3" style="display: none;">
+                                <label for="training_instruction_option">คำสั่งฝึก:</label>
+                                <select class="form-select rounded-pill mb-2" id="training_instruction_option">
+                                    <option value="">-- เลือกคำสั่งฝึก --</option>
+                                    <option value="normal">ฝึกได้ปกติ</option>
+                                    <option value="skip">งดฝึก</option>
+                                </select>
 
+                                <div id="trainingDayDiv" style="display: none;">
+                                    <label for="training_day_count">จำนวนวันที่งดฝึก (วัน):</label>
+                                    <input type="number" id="training_day_count" class="form-control rounded-pill"
+                                        min="1" placeholder="เช่น 5">
+                                </div>
+
+                                <input type="hidden" name="training_instruction" id="training_instruction"> {{--
+                                ค่าที่จะส่งจริง --}}
+                            </div>
+                        </div>
                         <div class="text-center mt-4">
                             <button type="submit" class="btn btn-success btn-lg rounded-pill px-5">
                                 <i class="fas fa-save mr-2"></i>บันทึกข้อมูล
@@ -275,17 +308,23 @@
         const followUpDateDiv = document.getElementById('followUpDateDiv');
         const appointmentLocationDiv = document.getElementById('appointmentLocationDiv');
         const patientTypeDiv = document.getElementById('patientTypeDiv');
+        const trainingInstructionDiv = document.getElementById('trainingInstructionDiv');
 
         if (treatmentStatus === 'Follow-up') {
-            // ถ้าเลือก Follow-up ให้แสดงช่องเลือกวันที่
             followUpDateDiv.style.display = 'block';
-            appointmentLocationDiv.style.display = 'block'; // แก้ไขการพิมพ์ผิด
-            patientTypeDiv.style.display = 'block'; // แก้ไขการพิมพ์ผิด
-        } else {
-            // ถ้าเลือกสถานะอื่นๆ ให้ซ่อนช่องเลือกวันที่
+            appointmentLocationDiv.style.display = 'block';
+            patientTypeDiv.style.display = 'block';
+            trainingInstructionDiv.style.display = 'block';
+        } else if (treatmentStatus === 'Discharge') {
             followUpDateDiv.style.display = 'none';
             appointmentLocationDiv.style.display = 'none';
             patientTypeDiv.style.display = 'none';
+            trainingInstructionDiv.style.display = 'block';
+        } else {
+            followUpDateDiv.style.display = 'none';
+            appointmentLocationDiv.style.display = 'none';
+            patientTypeDiv.style.display = 'none';
+            trainingInstructionDiv.style.display = 'none';
         }
     });
     // ฟังก์ชันอัปเดต VitalSign
@@ -305,7 +344,7 @@
     }
 
     // ฟังก์ชันบันทึกข้อมูลการวินิจฉัย
-    async function addDiagnosis(treatmentId, doctorName, temperature, bloodPressure, heartRate, icd10Code, treatmentStatus, notes, csrfToken) {
+    async function addDiagnosis(treatmentId, doctorName, temperature, bloodPressure, heartRate, icd10Code, treatmentStatus, notes, csrfToken, trainingInstruction) {
         return await fetch("/treatment/add-diagnosis", {
             method: "POST",
             headers: {
@@ -321,6 +360,7 @@
                 icd10_code: icd10Code.join(','),
                 treatment_status: treatmentStatus,
                 notes: notes,
+                training_instruction: trainingInstruction
             })
         });
     }
@@ -340,6 +380,7 @@
         console.log(followUpDate);
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
         let treatmentStatus = document.getElementById('treatmentStatus').value;
+        let trainingInstruction = document.getElementById('training_instruction').value;
         // ตรวจสอบค่ารหัสโรค
         if (!icd10Code) {
             Swal.fire("❌ ข้อผิดพลาด", "กรุณากรอกรหัสโรค (ICD10)", "error");
@@ -355,7 +396,7 @@
 
             // 2. ถ้าอัปเดต VitalSign สำเร็จ, ให้ทำการบันทึกการวินิจฉัย
             if (vitalSignResponse.ok) {
-                let diagnosisResponse = await addDiagnosis(treatmentId, doctorName, temperature, bloodPressure, heartRate, codesArray, treatmentStatus, notes, csrfToken);
+                let diagnosisResponse = await addDiagnosis(treatmentId, doctorName, temperature, bloodPressure, heartRate, codesArray, treatmentStatus, notes, csrfToken, trainingInstruction);
 
                 if (diagnosisResponse.ok) {
                     Swal.fire("สำเร็จ!", "บันทึกข้อมูลการวินิจฉัยและอัปเดต VitalSign สำเร็จ", "success")
@@ -498,6 +539,33 @@
             })
         });
     }
+    document.getElementById('training_instruction_option').addEventListener('change', function () {
+        const selected = this.value;
+        const trainingDayDiv = document.getElementById('trainingDayDiv');
+        const hiddenInput = document.getElementById('training_instruction');
+
+        if (selected === 'normal') {
+            trainingDayDiv.style.display = 'none';
+            hiddenInput.value = 'ฝึกได้ปกติ';
+        } else if (selected === 'skip') {
+            trainingDayDiv.style.display = 'block';
+            hiddenInput.value = ''; // รอ user กรอกวันแล้วค่อยอัปเดต
+        } else {
+            trainingDayDiv.style.display = 'none';
+            hiddenInput.value = '';
+        }
+    });
+
+    // อัปเดตค่าจริงเมื่อ user กรอกจำนวนวัน
+    document.getElementById('training_day_count').addEventListener('input', function () {
+        const day = this.value;
+        const hiddenInput = document.getElementById('training_instruction');
+        if (day) {
+            hiddenInput.value = `งดฝึก(${day} วัน)`;
+        } else {
+            hiddenInput.value = '';
+        }
+    });
 </script>
 
 </body>

@@ -108,7 +108,8 @@
                                             <td>{{ $report->soldier->affiliated_unit }}</td>
                                             <td>{{ $report->soldier->rotation->rotation_name ?? '-' }}</td>
                                             <td><button class="btn btn-info btn-sm btn-detail"
-                                                    data-id="{{ $report->id }}">เพิ่มเติม</button></td>
+                                                    data-id="{{ $report->id }}">{{ $report->symptom_description ?? 'ไม่ระบุอาการ' }}</button>
+                                            </td>
                                             <td>
                                                 @if ($report->status === 'pending')
                                                     <span class="status-badge shadow"><i

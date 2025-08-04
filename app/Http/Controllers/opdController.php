@@ -1,8 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Models\Rotation;
+use App\Models\TrainingUnit;
 use Illuminate\Http\Request;
+use App\Models\MedicalReport;
+
 use App\Models\Appointment;
 use App\Models\Checkin;
 use Carbon\Carbon;
@@ -69,7 +72,7 @@ class OpdController extends Controller
         $normalAppointmentsToday = Appointment::with('medicalReport.soldier')
             ->whereDate('appointment_date', $today)
             ->where('case_type', 'normal')
-            ->whereIn('status', ['scheduled', 'completed'])  // รวมสถานะ scheduled และ completed
+            ->whereIn('status', values: ['scheduled', 'completed', 'missed'])  // รวมสถานะ scheduled และ completed
             ->whereHas('medicalReport', function ($query) {
                 $query->where('status', 'approved');
             })
@@ -85,7 +88,7 @@ class OpdController extends Controller
         $criticalAppointments = Appointment::with('medicalReport.soldier')
             ->whereDate('appointment_date', $today)
             ->where('case_type', 'critical')
-            ->where('status', 'scheduled')
+            ->whereIn('status', values: ['scheduled', 'completed', 'missed'])  // รวมสถานะ scheduled และ completed
             ->whereHas('medicalReport', function ($query) {
                 $query->where('status', 'approved');
             })
@@ -129,11 +132,26 @@ class OpdController extends Controller
         $totalStats = [
             'admit' => (clone $baseQuery)->where('treatment_status', 'Admit')->count(),
             'refer' => (clone $baseQuery)->where('treatment_status', 'Refer')->count(),
-            'discharge_up' => (clone $baseQuery)->where('treatment_status', 'Discharge up')->count(),
-            'follow_up' => (clone $baseQuery)->where('treatment_status', 'Follow up')->count(),
+            'discharge' => (clone $baseQuery)->where('treatment_status', 'Discharge')->count(),
+            'follow_up' => (clone $baseQuery)->where('treatment_status', 'Follow-up')->count(),
         ];
 
+
+
+
         // ✅ ยอดเฉพาะวันนี้หรือช่วงวันที่
+        // ✅ สร้าง todayStats แยกจาก baseQuery โดยไม่แตะ date_filter จาก user
+        $todayOnlyQuery = clone $baseQuery;
+        $todayOnlyQuery->whereDate('diagnosis_date', $today);
+
+        $todayStats = [
+            'admit' => (clone $todayOnlyQuery)->where('treatment_status', 'Admit')->count(),
+            'refer' => (clone $todayOnlyQuery)->where('treatment_status', 'Refer')->count(),
+            'discharge' => (clone $todayOnlyQuery)->where('treatment_status', 'Discharge')->count(),
+            'follow_up' => (clone $todayOnlyQuery)->where('treatment_status', 'Follow-up')->count(),
+        ];
+
+        // ✅ ส่วนนี้ใช้สำหรับ filter ตาราง
         $filteredQuery = clone $baseQuery;
         if ($dateFilter === 'custom' && $startDate && $endDate) {
             $filteredQuery->whereBetween('diagnosis_date', [$startDate, $endDate . ' 23:59:59']);
@@ -141,12 +159,6 @@ class OpdController extends Controller
             $filteredQuery->whereDate('diagnosis_date', $today);
         }
 
-        $todayStats = [
-            'admit' => (clone $filteredQuery)->where('treatment_status', 'Admit')->count(),
-            'refer' => (clone $filteredQuery)->where('treatment_status', 'Refer')->count(),
-            'discharge_up' => (clone $filteredQuery)->where('treatment_status', 'Discharge up')->count(),
-            'follow_up' => (clone $filteredQuery)->where('treatment_status', 'Follow up')->count(),
-        ];
 
         // ✅ ดึงข้อมูลการวินิจฉัยทั้งหมด (เฉพาะ opd)
         $diagnosisList = MedicalDiagnosis::with([
@@ -206,9 +218,9 @@ class OpdController extends Controller
 
         $patientDetails = $patientQuery->get();
 
-        \Log::info('✅ รวมทั้งหมด', $totalStats);
-        \Log::info('📅 เฉพาะวันนี้', $todayStats);
-        \Log::info('📋 Patient details', $patientDetails->toArray());
+        Log::info('✅ รวมทั้งหมด', $totalStats);
+        Log::info('📅 เฉพาะวันนี้', $todayStats);
+        Log::info('📋 Patient details', $patientDetails->toArray());
 
         return view('opd.history_opd', compact(
             'totalStats',
@@ -285,6 +297,82 @@ class OpdController extends Controller
             'filterLocation'
         ));
     }
+    public function opdTodayAppointments(Request $request)
+    {
+        $caseType = $request->input('case_type');
+        $rotationId = $request->input('rotation_id');
+        $trainingUnitId = $request->input('training_unit_id');
+        $todayStatus = $request->input('today_status');
+        $appointmentDate = $request->input('appointment_date');
+        $statusView = $request->input('status', 'today'); // สำหรับควบคุม UI
+
+        // 📅 นัดหมายวันนี้
+        $todayReports = MedicalReport::query()
+            ->whereHas('appointment', function ($q) use ($caseType) {
+                $q->whereDate('appointment_date', now()->toDateString())
+                    ->whereIn('appointment_location', ['OPD', 'ARI clinic', 'กองทันตกรรม']);
+
+                if ($caseType && $caseType !== 'all') {
+                    $q->where('case_type', $caseType);
+                }
+            })
+            ->when($rotationId, fn($q) => $q->whereHas('soldier.rotation', fn($q2) => $q2->where('id', $rotationId)))
+            ->when($trainingUnitId, fn($q) => $q->whereHas('soldier', fn($q2) => $q2->where('training_unit_id', $trainingUnitId)))
+            ->with(['appointment.checkin.treatment', 'soldier.trainingUnit', 'soldier.rotation'])
+            ->get();
+
+        // ✅ กรองตามสถานะในวันนี้
+        if ($todayStatus && $todayStatus !== 'all') {
+            $todayReports = $todayReports->filter(function ($report) use ($todayStatus) {
+                $a = $report->appointment;
+                $c = $a->checkin ?? null;
+                $t = $c->treatment ?? null;
+
+                $status = 'ไม่ทราบสถานะ';
+
+                if ($a->status === 'scheduled' && optional($c)->checkin_status === 'not-checked-in') {
+                    $status = 'ยังไม่ได้ทำการรักษา';
+                } elseif ($a->status === 'scheduled' && optional($c)->checkin_status === 'checked-in' && optional($t)->treatment_status === 'not-treated') {
+                    $status = 'อยู่ระหว่างการรักษา';
+                } elseif ($a->status === 'completed' && optional($c)->checkin_status === 'checked-in' && optional($t)->treatment_status === 'treated') {
+                    $status = 'รักษาสำเร็จ';
+                } elseif ($a->status === 'missed') {
+                    $status = 'ไม่มาตามนัด';
+                }
+
+                return $status === $todayStatus;
+            });
+        }
+
+        // 🗓 นัดหมายทั้งหมด OPD + ตัวกรองวันที่
+        $opdReports = MedicalReport::query()
+            ->whereHas('appointment', function ($q) use ($caseType, $appointmentDate) {
+                $q->whereIn('appointment_location', ['OPD', 'ARI clinic', 'กองทันตกรรม']);
+
+                if ($caseType && $caseType !== 'all') {
+                    $q->where('case_type', $caseType);
+                }
+
+                if ($appointmentDate) {
+                    $q->whereDate('appointment_date', $appointmentDate);
+                }
+            })
+            ->when($rotationId, fn($q) => $q->whereHas('soldier.rotation', fn($q2) => $q2->where('id', $rotationId)))
+            ->when($trainingUnitId, fn($q) => $q->whereHas('soldier', fn($q2) => $q2->where('training_unit_id', $trainingUnitId)))
+            ->with(['appointment', 'soldier.trainingUnit', 'soldier.rotation'])
+            ->get();
+
+        $rotations = Rotation::all();
+        $trainingUnits = TrainingUnit::all();
+
+        return view('opd.opd_appointments', compact(
+            'todayReports',
+            'opdReports',
+            'rotations',
+            'trainingUnits'
+        ));
+    }
+
 
 
 }

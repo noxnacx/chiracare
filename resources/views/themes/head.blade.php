@@ -14,6 +14,8 @@
     <!-- Theme style -->
     <link rel="stylesheet" href="{{ URL::asset('dist/css/adminlte.min.css') }}">
 
+
+
     <!-- Custom CSS -->
     <style>
         body {

@@ -36,6 +36,17 @@
         /* ✅ บังคับให้ตัวเลขมีพื้นที่ว่าง */
         text-align: center;
     }
+
+    /* ✅ เพิ่ม CSS นี้ */
+    .dataTables_filter label {
+        gap: 8px !important;
+        /* เพิ่มระยะห่างระหว่าง "ค้นหา:" และ input */
+    }
+
+    .dataTables_filter label::after {
+        content: " ";
+        /* เพิ่มเว้นวรรคหลังคำว่า "ค้นหา:" */
+    }
 </style>
 
 <!-- ลำดับการโหลดที่ถูกต้อง -->
@@ -82,10 +93,12 @@
                     '<"d-flex align-items-center justify-content-end custom-pagination"p>>',
                 "lengthMenu": [[5, 10, 20, 50, 100, -1], [5, 10, 20, 50, 100, "All"]],
                 "language": {
-                    "search": "ค้นหา:",
+                    "search": "ค้นหา: ",
                     "lengthMenu": "แสดง _MENU_ รายการต่อหน้า",
                     "info": "แสดง _PAGE_ จาก _PAGES_",
-                    "zeroRecords": "ไม่พบข้อมูล",
+                    "infoEmpty": "แสดง 0 ถึง 0 จาก 0 รายการ", // ✅ เพิ่มบรรทัดนี้
+                    "emptyTable": "ไม่มีข้อมูลในตาราง", // ✅ เพิ่มบรรทัดนี้
+                    "zeroRecords": "<div style='text-align:center; '>ไม่พบข้อมูล</div>",
                     "paginate": {
                         "previous": "<",
                         "next": ">"
@@ -93,9 +106,9 @@
                 }
             });
 
-            // ปรับแต่ง CSS เพิ่มเติม
+            // ✅ แก้ไขการปรับแต่ง CSS
             $('.dataTables_length label').addClass('d-flex align-items-center gap-2 m-0');
-            $('.dataTables_filter label').addClass('d-flex align-items-center gap-2 m-0');
+            $('.dataTables_filter label').addClass('d-flex align-items-center gap-2 m-0'); // ✅ gap-2 จะทำให้มีเว้นวรรค
             $('.dataTables_length select').addClass('form-control mx-2').css('width', '80px');
             $('.dataTables_filter input').addClass('form-control').css('width', '180px');
 

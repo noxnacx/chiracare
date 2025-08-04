@@ -43,14 +43,14 @@
                 </li>
 
                 {{-- ตรวจสอบก่อนว่ามีตัวแปร $soldier อยู่หรือไม่ --}}
-@if(isset($soldier))
-    <a href="{{ route('soldier.my_appointments', ['id' => $soldier->id]) }}" class="nav-link {{ request()->is('soldier/*/my-appointments') ? 'active' : '' }}">
-        <i class="nav-icon fas fa-calendar-check"></i>
-        <p>
-            นัดหมายของฉัน
-        </p>
-    </a>
-@endif
+                @if(isset($soldier))
+                <li class="nav-item">
+                    <a href="{{ route('soldier.my_appointments', ['id' => $soldier->id]) }}" class="nav-link {{ request()->is('soldier/*/my-appointments') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-calendar-check"></i>
+                        <p>นัดหมายของฉัน</p>
+                    </a>
+                    </li>
+                @endif
 
                 <!-- แก้ไขข้อมูลส่วนตัว -->
                 <li class="nav-item">

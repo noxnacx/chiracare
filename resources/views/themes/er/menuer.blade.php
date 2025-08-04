@@ -16,7 +16,7 @@
             </div>
             <div class="info">
                 <a href="#" class="d-block">
-                    Admin Hospital
+                    ER
                 </a>
             </div>
         </div>
@@ -27,25 +27,39 @@
                 <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
                 <li class="nav-item menu-open">
-                    <a href="{{ route('dashboard.admin') }}" class="nav-link">
+                    <a href="/er/dashboard" class="nav-link">
                         <i class="nav-icon fas fa-tachometer-alt"></i>
                         <p>แดชบอร์ด</p>
                     </a>
                 </li>
                 <li class="nav-item menu-open">
-                    <a href="" {{ route('er.form') }}" class="nav-link">
-                        <i class="nav-icon fas fa-tachometer-alt"></i>
-                        <p>นัดฉุกเฉิน</p>
+                    <a href="/er/form" class="nav-link">
+                        <i class="nav-icon fas fa-calendar-alt"></i>
+                        <p>บันทึกข้อมูลผู้ป่วย</p>
                     </a>
 
 
                 </li>
                 <li class="nav-item menu-open">
-                    <a href="{{ route('er.patients') }}" class="nav-link"> <!-- ใช้ route() -->
-                        <i class="nav-icon fas fa-tachometer-alt"></i>
-                        <p>ตารางรักษา</p>
+                    <a href="/er/today" class="nav-link"> <!-- ใช้ route() -->
+                        <i class="nav-icon fas fa-users"></i>
+                        <p>ตารางผู้ป่วยวันนี้</p>
                     </a>
                 </li>
+
+                <li class="nav-item menu-open">
+                    <a href="/er/diagnosis-stats" class="nav-link">
+                        <i class="nav-icon fas fa-history"></i>
+                        <p>ประวัติการรักษา</p>
+                    </a>
+                </li>
+                <li class="nav-item menu-open">
+                    <a href="#" {{ route('er.form') }}" class="nav-link">
+                        <i class="nav-icon fas fa-chart-line"></i>
+                        <p>สถิติและรายงาน</p>
+                    </a>
+                </li>
+
 
 
             </ul>

@@ -1,0 +1,309 @@
+/* ===== BAR CHART SELECT STYLES ===== */
+
+/* Disease Box Compact */
+.disease-box-compact {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    opacity: 1;
+}
+
+#diseaseGraph {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+
+.disease-box-compact.zero-count {
+    background: #f5f5f5;
+    border: 1px solid #d0d0d0;
+    opacity: 0.7;
+}
+
+.disease-box-compact:hover {
+    transform: translateX(2px) !important;
+}
+
+/* Disease Info Compact */
+.disease-info-compact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.disease-color-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.disease-code {
+    font-size: 12px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.disease-box-compact.zero-count .disease-code {
+    color: #666666;
+}
+
+.no-data-text {
+    font-size: 10px;
+    color: #999999;
+    margin-left: 4px;
+}
+
+/* Disease Count */
+.disease-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: #495057;
+    white-space: nowrap;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.disease-count.zero-count {
+    color: #999999;
+    background-color: #f0f0f0;
+    border: 1px solid #d0d0d0;
+}
+
+/* Disease Row Compact */
+.disease-row-compact {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+    opacity: 1;
+}
+
+.disease-row-compact.zero-count {
+    background: #f5f5f5;
+    border: 1px solid #d0d0d0;
+    opacity: 0.7;
+}
+
+.disease-row-compact:hover {
+    background: #e9ecef !important;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #6c757d;
+}
+
+.empty-state i.fas.fa-virus {
+    font-size: 2rem;
+    color: var(--primary-color);
+    opacity: 0.4;
+    margin-bottom: 12px;
+}
+
+/* Tags */
+.tag {
+    display: inline-block;
+    background: #007bff;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin: 2px;
+    font-size: 12px;
+}
+
+.remove-tag {
+    margin-left: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.remove-tag:hover {
+    color: #ff6b6b;
+}
+
+/* Container สำหรับปุ่มชิดล่าง */
+.fixed-bottom-button-container {
+    text-align: center;
+    padding: 8px 12px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #f0f0f0;
+    z-index: 10;
+}
+
+/* สไตล์ปุ่ม */
+.detail-button {
+    width: 250px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+/* สไตล์เมื่อ hover */
+.detail-button:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+/* Card Header Custom */
+.card-header-custom {
+    border-bottom: 1px solid #f0f0f0;
+    background-color: #fafafa;
+}
+
+.card-title-custom {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 4px;
+}
+
+.card-subtitle-custom {
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 0;
+}
+
+/* Disease List */
+.disease-list {
+    background-color: #ffffff;
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 12px 8px 12px;
+}
+
+
+
+#diseaseGraph {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.card-header-custom {
+    padding: 16px 20px;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 14px 14px 0 0;
+    margin-bottom: 10px;
+}
+
+.card-title-custom {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+    text-align: center;
+}
+
+.card-subtitle-custom {
+    font-size: 12px;
+    color: #6c757d;
+    text-align: center;
+    margin-top: 4px;
+    margin-bottom: 0;
+}
+
+/* ปรับ scrollbar ให้สวยขึ้นเฉพาะ disease-list */
+/* เพิ่มใน <style> section ของคุณ */
+
+/* 1. ปรับ container หลักให้มี flex และ height ที่แน่นอน */
+.col-4 .card {
+    height: 285px !important;
+    min-height: 285px !important;
+    max-height: 285px !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.col-4 .card .card-body {
+    padding: 0 !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+/* 2. ปรับ header section ให้มีความสูงคงที่ */
+.card-header-custom {
+    flex-shrink: 0 !important;
+    border-bottom: 1px solid #e9ecef !important;
+    height: 60px !important;
+}
+
+/* 3. ปรับ disease-list ให้เลื่อนได้ */
+.disease-list {
+    overflow-y: scroll !important;
+    /* เปลี่ยนจาก auto เป็น scroll */
+    overflow-x: hidden !important;
+    padding: 8px 12px !important;
+    height: calc(285px - 60px - 50px) !important;
+    /* ลบความสูง header + button */
+    max-height: calc(285px - 60px - 50px) !important;
+}
+
+/* 4. ปรับ button container */
+.fixed-bottom-button-container {
+    flex-shrink: 0 !important;
+    height: 50px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* 5. ปรับ scrollbar */
+.disease-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.disease-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.disease-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.disease-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* สำหรับ Firefox */
+.disease-list {
+    scrollbar-width: thin !important;
+    scrollbar-color: #c1c1c1 #f1f1f1 !important;
+}

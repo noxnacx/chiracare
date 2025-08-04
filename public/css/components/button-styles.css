@@ -1,0 +1,19 @@
+.btn-navigate {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border: none;
+}
+
+/* Content Switch Button - เปลี่ยน Content */
+.btn-content-switch {
+    background: #77B2C9;
+    color: white;
+    border: none;
+}
+
+/* Modal Button */
+.btn-modal {
+    background: #6C63FF;
+    color: white;
+    border: none;
+}

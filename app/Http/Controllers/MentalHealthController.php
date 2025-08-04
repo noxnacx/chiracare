@@ -22,73 +22,81 @@ class MentalHealthController extends Controller
      */
     public function index(Request $request)
     {
-        // ... ส่วนของการนับจำนวนเคสสำหรับแสดงบนการ์ดสรุป (เหมือนเดิม) ...
+        // ส่วนของการนับจำนวนเคสสำหรับแสดงบนการ์ดสรุป
         $totalCases = AssessmentStatusTracking::whereIn('status', ['required', 'scheduled', 'completed'])->count();
         $requiredCases = AssessmentStatusTracking::where('status', 'required')->count();
         $scheduledCases = AssessmentStatusTracking::where('status', 'scheduled')->count();
         $completedCases = AssessmentStatusTracking::where('status', 'completed')->count();
 
-        // ✅✅✅ START: [แก้ไข] Logic การสร้างเคสใหม่ทั้งหมด ✅✅✅
-        // 1. ดึงผลประเมินที่เสี่ยงทั้งหมด ('depression', 'suicide_risk') และจัดกลุ่มตาม soldier_id
+        // Logic การสร้างเคสใหม่จากผลประเมินที่เสี่ยง
         $scoresBySoldier = AssessmentScore::whereIn('risk_level', ['สูง', 'ปานกลาง'])
             ->whereIn('assessment_type', ['depression', 'suicide_risk'])
-            ->latest('assessment_date') // เรียงตามวันที่ล่าสุดเสมอ
+            ->latest('assessment_date')
             ->get()
             ->groupBy('soldier_id');
 
-        // 2. วนลูปเพื่อสร้างเคสสำหรับทหารที่ยังไม่มีเคส Active
         foreach ($scoresBySoldier as $soldierId => $scores) {
-            // ตรวจสอบว่าทหารนายนี้มีเคสที่กำลังดำเนินการอยู่ (required หรือ scheduled) หรือไม่
             $hasActiveCase = AssessmentStatusTracking::where('soldier_id', $soldierId)
                 ->whereIn('status', ['required', 'scheduled'])->exists();
 
-            // ถ้ายังไม่มีเคส Active ให้สร้างใหม่
             if (!$hasActiveCase) {
-                // ใช้ผลประเมินล่าสุดในการสร้างเคส เพื่อผูก Foreign Key
                 $mostRecentScore = $scores->first();
-
-                // ตรวจสอบอีกครั้งว่าเคสจาก score ID นี้เคยถูกสร้างไปแล้วหรือยัง (ป้องกันการสร้างซ้ำหากเคสเก่าถูกปิดไปแล้ว)
                 $caseForThisScoreExists = AssessmentStatusTracking::where('assessment_score_id', $mostRecentScore->id)->exists();
-
                 if (!$caseForThisScoreExists) {
                     AssessmentStatusTracking::create([
                         'soldier_id' => $soldierId,
                         'assessment_score_id' => $mostRecentScore->id,
                         'risk_type' => 'at_risk',
-                        'risk_level_source' => $mostRecentScore->risk_level, // ดึงระดับความเสี่ยงจากเคสล่าสุด
+                        'risk_level_source' => $mostRecentScore->risk_level,
                         'status' => 'required'
                     ]);
                 }
             }
         }
-        // ✅✅✅ END: [แก้ไข] Logic การสร้างเคสใหม่ทั้งหมด ✅✅✅
 
-
-        // ✅✅✅ START: [แก้ไข] Logic การดึงข้อมูลเพื่อแสดงผล ✅✅✅
+        // ดึงข้อมูลสำหรับ Dropdowns ใน Filter
         $rotations = Rotation::orderBy('rotation_name')->get();
         $trainingUnits = TrainingUnit::orderBy('unit_name')->get();
 
-        // Query หลักยังคงเหมือนเดิม
+        // Query หลักสำหรับตารางด้านซ้าย
         $query = AssessmentStatusTracking::whereIn('status', ['required', 'scheduled'])
             ->with(['soldier.rotation', 'soldier.trainingUnit', 'assessmentScore', 'appointments']);
 
-        // ... ส่วน Filter ทั้งหมด (เหมือนเดิม) ...
-        if ($request->filled('search')) { /* ... */ }
-        if ($request->filled('rotation_id')) { /* ... */ }
-        if ($request->filled('training_unit_id')) { /* ... */ }
-        if ($request->filled('risk_type')) $query->where('risk_type', $request->risk_type);
-        if ($request->filled('status')) $query->where('status', 'LIKE', '%' . $request->status . '%');
-        if ($request->filled('start_date') && $request->filled('end_date')) { /* ... */ }
-
+        // Filtering Logic ที่สมบูรณ์
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->whereHas('soldier', function ($q) use ($searchTerm) {
+                $q->where(DB::raw("CONCAT(first_name, ' ', last_name)"), 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('soldier_id_card', 'like', "%{$searchTerm}%");
+            });
+        }
+        if ($request->filled('rotation_id')) {
+            $query->whereHas('soldier', function ($q) use ($request) {
+                $q->where('rotation_id', $request->rotation_id);
+            });
+        }
+        if ($request->filled('training_unit_id')) {
+            $query->whereHas('soldier', function ($q) use ($request) {
+                $q->where('training_unit_id', $request->training_unit_id);
+            });
+        }
+        if ($request->filled('risk_type')) {
+            $query->where('risk_type', $request->risk_type);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $startDate = Carbon::parse($request->start_date)->startOfDay();
+            $endDate = Carbon::parse($request->end_date)->endOfDay();
+            $query->whereBetween('created_at', [$startDate, $endDate]);
+        }
 
         $perPage = $request->input('per_page', 15);
         $trackedSoldiers = $query->latest()->paginate($perPage)->withQueryString();
 
-        // --- ส่วนเสริมข้อมูล (Data Enrichment) ---
-        // 1. ดึง ID ของทหารที่แสดงในหน้าปัจจุบัน
+        // Data Enrichment สำหรับการแสดงชื่อแบบประเมินทั้งหมด
         $soldierIdsOnPage = $trackedSoldiers->pluck('soldier_id')->unique();
-
-        // 2. ดึงข้อมูลความเสี่ยง *ทั้งหมด* ของทหารกลุ่มนี้ในครั้งเดียว
         $allRisksForPage = new Collection();
         if ($soldierIdsOnPage->isNotEmpty()) {
             $allRisksForPage = AssessmentScore::whereIn('soldier_id', $soldierIdsOnPage)
@@ -96,29 +104,30 @@ class MentalHealthController extends Controller
                 ->whereIn('assessment_type', ['depression', 'suicide_risk'])
                 ->select('soldier_id', 'assessment_type')
                 ->get()
-                ->groupBy('soldier_id'); // จัดกลุ่มผลลัพธ์ตาม ID ทหาร
+                ->groupBy('soldier_id');
         }
-
-        // 3. นำข้อมูลความเสี่ยงทั้งหมดไปผนวกกับข้อมูลหลัก
         $trackedSoldiers->each(function ($trackingItem) use ($allRisksForPage) {
-            // ตรวจสอบว่ามีข้อมูลความเสี่ยงของทหารคนนี้ใน array ที่เราดึงมาหรือไม่
             if (isset($allRisksForPage[$trackingItem->soldier_id])) {
-                // ดึง 'assessment_type' ทั้งหมดออกมา
                 $types = $allRisksForPage[$trackingItem->soldier_id]->pluck('assessment_type')->unique();
-                // สร้าง property ใหม่เพื่อเก็บข้อมูลนี้
                 $trackingItem->all_risk_assessment_types = $types;
             } else {
-                // กรณีฉุกเฉิน (เช่น เคสมีประวัติเดิม) ให้ใช้ข้อมูลจาก assessmentScore ที่ผูกไว้
                 $trackingItem->all_risk_assessment_types = collect(
                     $trackingItem->assessmentScore ? [$trackingItem->assessmentScore->assessment_type] : []
                 );
             }
         });
-        // ✅✅✅ END: [แก้ไข] Logic การดึงข้อมูลเพื่อแสดงผล ✅✅✅
 
+        // Query ใหม่สำหรับแท็บ "รายชื่อรอส่งป่วย" ด้านขวา
+        $waitingForReferral = AssessmentStatusTracking::where('status', 'required')
+            ->with('soldier.trainingUnit')
+            ->latest()
+            ->get();
+
+        // ส่งตัวแปรทั้งหมดไปที่ View
         return view('mental_health.dashboard', compact(
             'trackedSoldiers', 'perPage', 'totalCases', 'requiredCases',
-            'scheduledCases', 'completedCases', 'rotations', 'trainingUnits'
+            'scheduledCases', 'completedCases', 'rotations', 'trainingUnits',
+            'waitingForReferral'
         ));
     }
 
@@ -127,16 +136,16 @@ class MentalHealthController extends Controller
      */
     public function showCompletedHistory(Request $request)
     {
-        // ✅ 1. ดึงข้อมูลสำหรับ Filter
+        // 1. ดึงข้อมูลสำหรับ Filter
         $rotations = Rotation::orderBy('rotation_name')->get();
         $trainingUnits = TrainingUnit::orderBy('unit_name')->get();
 
-        // ✅ 2. ปรับปรุง Query หลัก
-        $query = AssessmentStatusTracking::where('status', 'completed')
-                    ->with(['soldier.rotation', 'soldier.trainingUnit', 'assessmentScore']) // เพิ่ม soldier.rotation และ soldier.trainingUnit
-                    ->latest('updated_at');
+        // ✅✅✅ START: แก้ไขตรรกะการกรองใหม่ทั้งหมด ✅✅✅
 
-        // Filter เดิม
+        // 2. เริ่มต้น Query ที่ตารางหลักก่อน
+        $query = AssessmentStatusTracking::query()->where('status', 'completed');
+
+        // 3. ใช้ Filter กับตารางหลักและตารางที่เกี่ยวข้อง
         if ($request->filled('search')) {
             $searchTerm = $request->search;
             $query->whereHas('soldier', function ($q) use ($searchTerm) {
@@ -144,14 +153,14 @@ class MentalHealthController extends Controller
                   ->orWhere('soldier_id_card', 'like', "%{$searchTerm}%");
             });
         }
-        if ($request->filled('risk_type')) $query->where('risk_type', $request->risk_type);
+        if ($request->filled('risk_type')) {
+            $query->where('risk_type', $request->risk_type);
+        }
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $startDate = Carbon::parse($request->start_date)->startOfDay();
             $endDate = Carbon::parse($request->end_date)->endOfDay();
             $query->whereBetween('updated_at', [$startDate, $endDate]);
         }
-
-        // ✅ 3. เพิ่ม Filter ใหม่
         if ($request->filled('rotation_id')) {
             $query->whereHas('soldier', function ($q) use ($request) {
                 $q->where('rotation_id', $request->rotation_id);
@@ -163,48 +172,66 @@ class MentalHealthController extends Controller
             });
         }
 
-        // Logic เดิมในการดึงเคสที่ไม่ซ้ำคน
-        $allCompletedCases = $query->get();
-        $uniqueSoldierCases = $allCompletedCases->unique('soldier_id');
+        // 4. ดึงข้อมูลทั้งหมดที่ผ่านการกรองแล้ว (ยังอาจมีทหารซ้ำ)
+        $allFilteredResults = $query->with('soldier')->get();
 
-        // ✅ 4. เพิ่ม Logic การดึงชื่อแบบประเมินทั้งหมด (Data Enrichment)
-        $soldierIds = $uniqueSoldierCases->pluck('soldier_id')->unique();
-        $allRisksForSoldiers = new Collection();
+        // 5. คัดเลือกเฉพาะเคสล่าสุดของแต่ละคนจากผลลัพธ์ที่กรองแล้ว
+        $latestCases = $allFilteredResults
+            ->sortByDesc('updated_at')
+            ->unique('soldier_id');
+
+        // 6. ดึงข้อมูลที่เกี่ยวข้องทั้งหมดสำหรับเคสที่คัดเลือกแล้ว
+        $latestCaseIds = $latestCases->pluck('id');
+        $finalCases = AssessmentStatusTracking::whereIn('id', $latestCaseIds)
+            ->with(['soldier.rotation', 'soldier.trainingUnit', 'assessmentScore', 'appointments.treatment'])
+            ->get()
+            ->keyBy('id') // เรียงลำดับให้ง่ายต่อการดึง
+            ->sortByDesc('updated_at'); // จัดเรียงอีกครั้ง
+
+        // 7. Data Enrichment (ดึงชื่อแบบประเมินทั้งหมด) และคำนวณยอดรวม
+        $soldierIds = $finalCases->pluck('soldier_id')->unique();
+        $assessmentCounts = ['depression' => 0, 'suicide_risk' => 0];
         if ($soldierIds->isNotEmpty()) {
             $allRisksForSoldiers = AssessmentScore::whereIn('soldier_id', $soldierIds)
                 ->whereIn('risk_level', ['สูง', 'ปานกลาง'])
                 ->whereIn('assessment_type', ['depression', 'suicide_risk'])
-                ->select('soldier_id', 'assessment_type')
-                ->get()
-                ->groupBy('soldier_id');
-        }
+                ->select('soldier_id', 'assessment_type')->get()->groupBy('soldier_id');
 
-        $uniqueSoldierCases->each(function ($trackingItem) use ($allRisksForSoldiers) {
-            if (isset($allRisksForSoldiers[$trackingItem->soldier_id])) {
-                $types = $allRisksForSoldiers[$trackingItem->soldier_id]->pluck('assessment_type')->unique();
-                $trackingItem->all_risk_assessment_types = $types;
-            } else {
-                $trackingItem->all_risk_assessment_types = collect(
-                    $trackingItem->assessmentScore ? [$trackingItem->assessmentScore->assessment_type] : []
-                );
+            $finalCases->each(function ($item) use ($allRisksForSoldiers) {
+                if (isset($allRisksForSoldiers[$item->soldier_id])) {
+                    $item->all_risk_assessment_types = $allRisksForSoldiers[$item->soldier_id]->pluck('assessment_type')->unique();
+                } else {
+                    $item->all_risk_assessment_types = collect();
+                }
+            });
+
+            foreach ($finalCases as $item) {
+                if ($item->all_risk_assessment_types->contains('depression')) $assessmentCounts['depression']++;
+                if ($item->all_risk_assessment_types->contains('suicide_risk')) $assessmentCounts['suicide_risk']++;
             }
-        });
+        }
+        $riskTypeCounts = $finalCases->countBy('risk_type');
 
-
-        // Logic เดิมในการสร้าง Pagination
+        // 8. แบ่งหน้าข้อมูลด้วยตัวเอง
         $perPage = $request->input('per_page', 15);
-        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
-        $currentPageItems = $uniqueSoldierCases->slice(($currentPage - 1) * $perPage, $perPage)->all();
-        $completedSoldiers = new \Illuminate\Pagination\LengthAwarePaginator(
-            $currentPageItems,
-            count($uniqueSoldierCases),
-            $perPage,
-            $currentPage,
-            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
-        );
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage('page');
+        $currentPageItems = $finalCases->slice(($currentPage - 1) * $perPage, $perPage);
+        $completedSoldiers = new \Illuminate\Pagination\LengthAwarePaginator($currentPageItems, $finalCases->count(), $perPage, $currentPage, [
+            'path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
+            'pageName' => 'page',
+        ]);
+        $completedSoldiers->appends($request->all());
 
-        // ✅ 5. ส่งตัวแปรใหม่ไปที่ View
-        return view('mental_health.completed_history', compact('completedSoldiers', 'perPage', 'rotations', 'trainingUnits'));
+        // 9. ส่งตัวแปรทั้งหมดไปที่ View
+        return view('mental_health.completed_history', [
+            'completedSoldiers' => $completedSoldiers,
+            'perPage' => $perPage,
+            'rotations' => $rotations,
+            'trainingUnits' => $trainingUnits,
+            'riskTypeCounts' => $riskTypeCounts,
+            'assessmentCounts' => $assessmentCounts,
+        ]);
+        // ✅✅✅ END: แก้ไขตรรกะการกรองใหม่ทั้งหมด ✅✅✅
     }
     // ... (ฟังก์ชันอื่นๆ ที่เหลือ เหมือนเดิม) ...
 

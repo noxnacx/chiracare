@@ -1,101 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 @include('themes.head')
-<style>
-    body {
-        background-color: #f4f7fc;
-        color: #333;
-    }
 
-    .container {
-        max-width: 900px;
-        margin: 50px auto;
-        background-color: #fff;
-        padding: 30px;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
 
-    h4 {
-        color: #2b9b6a;
-        font-size: 26px;
-        font-weight: bold;
-        margin-bottom: 20px;
-        text-align: center;
-    }
-
-    .form-label {
-        font-weight: bold;
-        color: #444;
-    }
-
-    .form-control {
-        border-radius: 5px;
-        border: 1px solid #ccc;
-        padding: 10px;
-        width: 100%;
-        margin-bottom: 15px;
-        font-size: 16px;
-    }
-
-    .form-control:focus {
-        border-color: #4CAF50;
-        box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
-    }
-
-    .btn-success {
-        background-color: #28a745;
-        color: white;
-        border: none;
-        padding: 12px 30px;
-        border-radius: 5px;
-        font-size: 18px;
-        cursor: pointer;
-    }
-
-    .btn-success:hover {
-        background-color: #218838;
-    }
-
-    .mb-3 {
-        margin-bottom: 20px;
-    }
-
-    #soldier-info {
-        margin-top: 20px;
-        display: none;
-    }
-
-    .alert {
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 15px;
-        margin-top: 20px;
-        border-radius: 5px;
-        display: none;
-    }
-
-    #risk_level {
-        background-color: #f2f2f2;
-        text-align: center;
-        font-weight: bold;
-        color: #000;
-    }
-
-    .d-flex {
-        display: flex;
-        justify-content: flex-end;
-    }
-
-    .alert-success {
-        background-color: #d4edda;
-        color: #155724;
-        padding: 15px;
-        border-radius: 5px;
-        margin-top: 20px;
-        display: none;
-    }
-</style>
 </head>
 
 <body class="hold-transition layout-fixed">
@@ -109,204 +16,357 @@
         <div class="content-wrapper">
             <div class="content-header">
                 <div class="container-fluid">
-                    <div class="container">
-                        <h4>ฟอร์มกรอกข้อมูลผู้ป่วย ER</h4>
-                        <div class="alert alert-danger" id="error-alert">
-                            ไม่พบข้อมูลทหาร
+
+
+                    <div class="container mt-4">
+
+                        <div class="card shadow-lg rounded overflow-hidden">
+                            <div class="form-header">
+                                <h4>บันทึกข้อมูลผู้ป่วยและวินิจฉัย (ER)
+                                </h4>
+                            </div>
+                            <div class="card-body">
+
+                                <div class="alert alert-danger d-none" id="error-alert"> ไม่พบข้อมูลทหาร</div>
+                                <div class="alert alert-success d-none" id="success-alert">บันทึกข้อมูลเรียบร้อย
+                                </div>
+
+                                <form id="erDiagnosisForm" method="POST" action="{{ route('er.storeWithDiagnosis') }}">
+                                    @csrf
+
+                                    <!-- 🔹 ชื่อ -->
+                                    <div class="mb-4">
+                                        <label for="soldier_fullname"
+                                            class="form-label fw-bold">ชื่อ-นามสกุลทหาร</label>
+                                        <input type="text" id="soldier_fullname" class="form-control" required
+                                            placeholder="เช่น สมชาย ใจดี">
+                                    </div>
+
+                                    <!-- 🔹 ข้อมูลอัตโนมัติ -->
+                                    <div id="soldier-info" class="bg-light p-3 rounded border mb-4 ">
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label">เลขบัตรประชาชน</label>
+                                                <input type="text" id="soldier_id_card" name="soldier_id_card"
+                                                    class="form-control" readonly>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">ผลัด</label>
+                                                <input type="text" id="soldier_rotation" class="form-control" readonly>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">หน่วยฝึก</label>
+                                                <input type="text" id="soldier_training_unit" class="form-control"
+                                                    readonly>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 🔹 รายละเอียดอาการ -->
+                                    <div class="mb-4">
+                                        <label for="symptom_description"
+                                            class="form-label fw-bold">คำอธิบายอาการ</label>
+                                        <textarea name="symptom_description" id="symptom_description"
+                                            class="form-control" rows="3" required
+                                            placeholder="ระบุอาการของผู้ป่วย..."></textarea>
+                                    </div>
+
+                                    <!-- 🔹 สัญญาณชีพ -->
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-md-3">
+                                            <label class="form-label">อุณหภูมิ (°C)</label>
+                                            <input type="number" name="temperature" id="temperature"
+                                                class="form-control" step="0.1" min="30" max="45" required
+                                                placeholder="36.5">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">ความดันโลหิต (SYS/DIA)</label>
+                                            <input type="text" name="blood_pressure" id="blood_pressure"
+                                                class="form-control" pattern="\d{2,3}/\d{2,3}" required
+                                                placeholder="120/80">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">อัตราการเต้นหัวใจ</label>
+                                            <input type="number" name="heart_rate" id="heart_rate" class="form-control"
+                                                min="40" max="180" required placeholder="75">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">ระดับความเสี่ยง</label>
+                                            <input type="text" id="risk_level_display" class="form-control bg-white"
+                                                readonly>
+                                            <input type="hidden" name="risk_level" id="risk_level">
+                                        </div>
+                                    </div>
+
+                                    <!-- 🔹 ระดับความเจ็บปวด -->
+
+
+                                    <!-- 🔹 แพทย์วินิจฉัย -->
+                                    <div class="mb-4">
+                                        <label for="doctor_name" class="form-label">ชื่อแพทย์ผู้วินิจฉัย</label>
+                                        <input type="text" name="doctor_name" id="doctor_name" class="form-control"
+                                            required placeholder="นพ. สุขใจ ดีงาม">
+                                    </div>
+
+                                    <!-- 🔹 ICD10 -->
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-md-6">
+                                            <label class="form-label">รหัสโรค (ICD10)</label>
+                                            <input type="text" name="icd10_code" id="icd10_code" class="form-control"
+                                                placeholder="เช่น J18.9,E11.9" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">คำอธิบายโรค</label>
+                                            <input type="text" id="diseaseDescription" class="form-control bg-white"
+                                                readonly>
+                                        </div>
+                                    </div>
+
+                                    <!-- 🔹 หมายเหตุ -->
+                                    <div class="mb-4">
+                                        <label for="notes" class="form-label">หมายเหตุเพิ่มเติม</label>
+                                        <textarea name="notes" id="notes" class="form-control" rows="2"
+                                            placeholder="เช่น ผู้ป่วยมีประวัติแพ้ยา..."></textarea>
+                                    </div>
+
+                                    <!-- 🔹 สถานะการรักษา -->
+                                    <div class="mb-4">
+                                        <label for="treatment_status" class="form-label fw-bold">สถานะการรักษา</label>
+                                        <select name="treatment_status" id="treatment_status" class="custom-dropdown"
+                                            required>
+                                            <option value="">-- เลือกสถานะ --</option>
+                                            <option value="Admit">Admit (รับไว้รักษา)</option>
+                                            <option value="Refer">Refer (ส่งต่อ)</option>
+                                            <option value="Discharge">Discharge (จำหน่าย)</option>
+                                            <option value="Follow-up">Follow-up (ติดตามอาการ)</option>
+                                        </select>
+                                    </div>
+
+
+
+                                    <!-- 🔹 ข้อมูลนัดหมายติดตาม -->
+                                    <div id="follow-up-fields" class="mb-4" style="display: none;">
+                                        <div class="p-4 rounded border shadow-sm bg-white">
+                                            <div class="mb-3 border-bottom pb-2 d-flex align-items-center">
+                                                <i class="bi bi-calendar3 text-primary me-2"></i>
+                                                <h6 class="m-0 text-primary fw-bold">ข้อมูลนัดหมายติดตาม</h6>
+                                            </div>
+
+                                            <div class="row g-3">
+                                                <div class="col-md-4">
+                                                    <label class="form-label">วัน-เวลานัดหมาย</label>
+                                                    <input type="datetime-local" name="appointment_date"
+                                                        class="form-control">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">สถานที่นัดหมาย</label>
+                                                    <select name="appointment_location" class="form-select">
+                                                        <option value="OPD">OPD</option>
+                                                        <option value="ER">ER</option>
+                                                        <option value="IPD">IPD</option>
+                                                        <option value="กองพันทหารราบ">กองพันทหารราบ</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">ประเภทผู้ป่วย</label>
+                                                    <select name="case_type" class="form-select">
+                                                        <option value="normal">ปกติ</option>
+                                                        <option value="critical">วิกฤติ</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 🔹 คำสั่งฝึก -->
+                                    <div id="training-instruction-field" class="mb-4" style="display: none;">
+                                        <div class="p-4 rounded border shadow-sm bg-white">
+                                            <div class="mb-3 border-bottom pb-2 d-flex align-items-center">
+                                                <i class="bi bi-activity text-success me-2"></i>
+                                                <h6 class="m-0 text-success fw-bold">คำสั่งฝึก</h6>
+                                            </div>
+
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">สถานะคำสั่งฝึก</label>
+                                                    <select class="form-select" id="training_instruction_option">
+                                                        <option value="">-- เลือกคำสั่งฝึก --</option>
+                                                        <option value="normal">ฝึกได้ปกติ</option>
+                                                        <option value="skip">งดฝึก</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6" id="trainingDayDiv" style="display: none;">
+                                                    <label class="form-label">จำนวนวันที่งดฝึก (วัน)</label>
+                                                    <input type="number" id="training_day_count" class="form-control"
+                                                        min="1" placeholder="เช่น 5">
+                                                </div>
+                                            </div>
+
+                                            <input type="hidden" name="training_instruction" id="training_instruction">
+                                        </div>
+                                    </div>
+
+
+                                    <!-- 🔹 Submit -->
+                                    <div class="d-flex justify-content-end mt-4">
+
+                                        <button type="submit" class="btn btn-success px-5 py-2 rounded-1 shadow
+">
+                                            บันทึกข้อมูล</button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
-                        <div class="alert alert-success" id="success-alert">
-                            ข้อมูลถูกบันทึกเรียบร้อย
-                        </div>
-                        <form id="erForm" action="{{ route('er.store') }}" method="POST" enctype="multipart/form-data">
-                            @csrf
-                            <!-- กรอกเลขบัตรประชาชน -->
-                            <div class="mb-3">
-                                <label for="soldier_id_card" class="form-label">กรอกเลขบัตรประชาชนทหาร</label>
-                                <input type="text" class="form-control" id="soldier_id_card" name="soldier_id_card"
-                                    required>
-                            </div>
-
-                            <!-- แสดงชื่อทหาร -->
-                            <div id="soldier-info" class="mb-3" style="display:none;">
-                                <label class="form-label">ชื่อทหาร</label>
-                                <input type="text" id="soldier_name" class="form-control" readonly>
-                            </div>
-
-                            <!-- คำอธิบายอาการ -->
-                            <div class="mb-3">
-                                <label for="symptom_description" class="form-label">คำอธิบายอาการ</label>
-                                <textarea name="symptom_description" id="symptom_description" class="form-control"
-                                    rows="3" required></textarea>
-                            </div>
-
-                            <!-- ระดับความเจ็บปวด -->
-                            <div class="mb-3">
-                                <label for="pain_score" class="form-label">ระดับความเจ็บปวด (1-10)</label>
-                                <input type="number" name="pain_score" id="pain_score" class="form-control" min="1"
-                                    max="10" required>
-                            </div>
-
-                            <!-- อุณหภูมิร่างกาย -->
-                            <div class="mb-3">
-                                <label for="temperature" class="form-label">อุณหภูมิร่างกาย (°C)</label>
-                                <input type="number" name="temperature" id="temperature" class="form-control" step="0.1"
-                                    min="30" max="45" required>
-                            </div>
-
-                            <!-- ความดันโลหิต -->
-                            <div class="mb-3">
-                                <label for="blood_pressure" class="form-label">ความดันโลหิต (SYS/DIA)</label>
-                                <input type="text" name="blood_pressure" id="blood_pressure" class="form-control"
-                                    pattern="\d{2,3}/\d{2,3}" required>
-                            </div>
-
-                            <!-- อัตราการเต้นของหัวใจ -->
-                            <div class="mb-3">
-                                <label for="heart_rate" class="form-label">อัตราการเต้นของหัวใจ (bpm)</label>
-                                <input type="number" name="heart_rate" id="heart_rate" class="form-control" min="40"
-                                    max="180" required>
-                            </div>
-
-                            <!-- ระดับความเสี่ยง -->
-                            <!-- ฟิลด์แสดงผลระดับความเสี่ยง -->
-                            <div class="mb-3">
-                                <label for="risk_level_display" class="form-label">ระดับความเสี่ยง</label>
-                                <input type="text" id="risk_level_display" class="form-control" readonly>
-                            </div>
-                            <!-- ฟิลด์ hidden สำหรับ risk_level -->
-                            <input type="hidden" id="risk_level" name="risk_level" value="">
-
-                            <!-- ตั้งค่าสถานะเป็น "in ER" โดยไม่สามารถแก้ไขได้ -->
-                            <div class="mb-3">
-                                <label for="status" class="form-label">สถานะ</label>
-                                <input type="text" name="status" id="status" value="in ER" class="form-control"
-                                    readonly>
-                            </div>
-
-                            <!-- ปุ่มบันทึก -->
-                            <div class="d-flex">
-                                <button type="submit" class="btn btn-success">บันทึกข้อมูล</button>
-                            </div>
-                        </form>
                     </div>
+                    @include('themes.script')
 
+                    <script>
+                        // โหลดข้อมูลทหารจากชื่อ
+                        document.getElementById('soldier_fullname').addEventListener('input', function () {
+                            let parts = this.value.trim().split(/\s+/);
+                            if (parts.length >= 2) {
+                                fetch(`{{ route('soldier.getByName') }}?first_name=${parts[0]}&last_name=${parts.slice(1).join(' ')}`)
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        if (data.success) {
+                                            document.getElementById('soldier_id_card').value = data.soldier.soldier_id_card;
+                                            document.getElementById('soldier_rotation').value = data.soldier.rotation_name;
+                                            document.getElementById('soldier_training_unit').value = data.soldier.training_unit_name;
 
-
-                </div>
-            </div>
-        </div><!-- /.container-fluid -->
-    </div>
-
-    @include('themes.script')
-
-    <script>
-        $(document).ready(function () {
-            // เมื่อกรอกเลขบัตรประชาชนทหาร
-            $('#soldier_id_card').on('input', function () {
-                let soldierIdCard = $(this).val();
-                if (soldierIdCard.length >= 13) {  // ตรวจสอบว่าเลขบัตรประชาชนครบ 13 หลัก
-                    $.ajax({
-                        url: "{{ route('soldier.getByIdCard') }}",  // ตรวจสอบ URL
-                        method: "GET",
-                        data: { id_card: soldierIdCard },
-                        success: function (data) {
-                            if (data.success) {
-                                $('#soldier_name').val(data.soldier.first_name + ' ' + data.soldier.last_name);
-                                $('#soldier-info').show();
-                            } else {
-                                $('#soldier-info').hide();
-                                alert('ไม่พบข้อมูลทหาร');
+                                            document.getElementById('soldier-info').classList.remove('d-none');
+                                            document.getElementById('error-alert').classList.add('d-none');
+                                        } else {
+                                            document.getElementById('error-alert').classList.remove('d-none');
+                                            document.getElementById('soldier-info').classList.add('d-none');
+                                        }
+                                    });
                             }
-                        }
-                    });
-                }
-            });
-
-            // เมื่อฟอร์มถูกส่ง (submit)
-            $('#erForm').submit(function (event) {
-                event.preventDefault(); // ป้องกันการส่งฟอร์มแบบปกติ
-
-                // สร้าง FormData จากฟอร์ม
-                let formData = new FormData(this);
-
-                // ส่งข้อมูลไปยัง server
-                $.ajax({
-                    url: $(this).attr('action'),
-                    method: 'POST',
-                    data: formData,
-                    contentType: false,
-                    processData: false,
-                    success: function (response) {
-                        // เมื่อบันทึกข้อมูลสำเร็จ แสดง popup แจ้งเตือน
-                        if (response.success) {
-                            Swal.fire({
-                                title: 'บันทึกข้อมูลสำเร็จ!',
-                                text: response.message,
-                                icon: 'success',
-                                confirmButtonText: 'ตกลง'
-                            }).then(() => {
-                                window.location.href = response.redirect; // เปลี่ยนเส้นทางหลังจากแสดง popup
-                            });
-                        }
-                    },
-                    error: function () {
-                        Swal.fire({
-                            title: 'เกิดข้อผิดพลาด!',
-                            text: 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
-                            icon: 'error',
-                            confirmButtonText: 'ตกลง'
                         });
-                    }
-                });
-            });
-        });
-        // คำนวณระดับความเสี่ยงเมื่อกรอกข้อมูลในฟอร์ม
-        $(document).ready(function () {
-            $('#temperature, #blood_pressure, #heart_rate').on('input', function () {
-                let temperature = parseFloat($('#temperature').val());
-                let bp = $('#blood_pressure').val().split('/');
-                let systolic = parseInt(bp[0]) || 0;
-                let diastolic = parseInt(bp[1]) || 0;
-                let heartRate = parseInt($('#heart_rate').val());
 
-                let riskLevel = '';
+                        // คำนวณ risk level
+                        document.querySelectorAll('#temperature, #blood_pressure, #heart_rate').forEach(el => {
+                            el.addEventListener('input', function () {
+                                let temp = parseFloat(document.getElementById('temperature').value);
+                                let [sys, dia] = document.getElementById('blood_pressure').value.split('/').map(x => parseInt(x));
+                                let risk = 'green';
+                                if (temp > 40 || sys >= 180 || dia >= 120 || sys >= 140 || dia >= 90) risk = 'red';
+                                else if (temp > 38 || sys >= 121 || dia >= 81 || sys < 90 || dia < 60) risk = 'yellow';
+                                document.getElementById('risk_level_display').value = risk;
+                                document.getElementById('risk_level').value = risk;
+                            });
+                        });
 
-                // คำนวณระดับความเสี่ยง
-                if (temperature > 40) {
-                    riskLevel = 'red';  // ค่าที่ตรงกับ enum
-                } else if (temperature > 38) {
-                    riskLevel = 'yellow';  // ค่าที่ตรงกับ enum
-                } else {
-                    if (systolic >= 180 || diastolic >= 120) {
-                        riskLevel = 'red';  // ค่าที่ตรงกับ enum
-                    } else if (systolic >= 140 || diastolic >= 90) {
-                        riskLevel = 'red';  // ค่าที่ตรงกับ enum
-                    } else if (systolic >= 121 || diastolic >= 81) {
-                        riskLevel = 'yellow';  // ค่าที่ตรงกับ enum
-                    } else if (systolic < 90 || diastolic < 60) {
-                        riskLevel = 'yellow';  // ค่าที่ตรงกับ enum
-                    } else {
-                        riskLevel = 'green';  // ค่าที่ตรงกับ enum
-                    }
-                }
+                        // แสดงฟิลด์ follow-up เฉพาะกรณี follow-up
+                        document.getElementById('treatment_status').addEventListener('change', function () {
+                            const status = this.value;
+                            // ✅ แสดง follow-up fields
+                            document.getElementById('follow-up-fields').style.display = (status === 'Follow-up') ? 'block' : 'none';
+                            // ✅ แสดง training instruction เฉพาะ Follow-up หรือ Discharge
+                            document.getElementById('training-instruction-field').style.display =
+                                (status === 'Follow-up' || status === 'Discharge') ? 'block' : 'none';
+                        });
 
-                // ตั้งค่าระดับความเสี่ยงในฟอร์ม
-                $('#risk_level').val(riskLevel);  // ส่งค่าผ่าน hidden input
+                        // ดึงชื่อโรคจาก ICD10
+                        document.getElementById('icd10_code').addEventListener('input', function () {
+                            let codes = this.value;
+                            fetch(`/diseases/${codes}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.diseases && data.diseases.length > 0) {
+                                        document.getElementById('diseaseDescription').value = data.diseases.map(d => d.disease_name).join(', ');
+                                    } else {
+                                        document.getElementById('diseaseDescription').value = 'ไม่พบข้อมูล';
+                                    }
+                                });
+                        });
+                        document.getElementById('training_instruction_option').addEventListener('change', function () {
+                            const selected = this.value;
+                            const trainingDayDiv = document.getElementById('trainingDayDiv');
+                            const hiddenInput = document.getElementById('training_instruction');
 
-                // แสดงระดับความเสี่ยงในฟอร์ม
-                $('#risk_level_display').val(riskLevel);  // แสดงค่าที่คำนวณใน input ที่แสดงผล
-            });
-        });
+                            if (selected === 'normal') {
+                                trainingDayDiv.style.display = 'none';
+                                hiddenInput.value = 'ฝึกได้ปกติ';
+                            } else if (selected === 'skip') {
+                                trainingDayDiv.style.display = 'block';
+                                hiddenInput.value = ''; // รอ user กรอกวันแล้วค่อยอัปเดต
+                            } else {
+                                trainingDayDiv.style.display = 'none';
+                                hiddenInput.value = '';
+                            }
+                        });
 
-    </script>
+                        // อัปเดตค่าจริงเมื่อ user กรอกจำนวนวัน
+                        document.getElementById('training_day_count').addEventListener('input', function () {
+                            const day = this.value;
+                            const hiddenInput = document.getElementById('training_instruction');
+                            if (day) {
+                                hiddenInput.value = `งดฝึก(${day} วัน)`;
+                            } else {
+                                hiddenInput.value = '';
+                            }
+                        });
+                    </script>
+                    <style>
+                        .form-header {
+                            background: linear-gradient(135deg, #b71c1c, #d32f2f);
+                            /* ER สีแดงเข้ม -> แดงสด */
+                            /* ปรับสีได้ */
+                            color: white;
+                            padding: 1.5rem;
+                            text-align: center;
+                            margin: 0;
+                        }
+
+                        .form-header h4 {
+                            font-weight: 600;
+                            margin: 0;
+                            letter-spacing: 0.5px;
+                        }
+
+                        .card {
+                            border-radius: 12px;
+                            overflow: hidden;
+                            /* สำคัญมาก เพื่อให้ header ไม่เกินกรอบ */
+                        }
+
+
+                        .custom-dropdown {
+                            appearance: none;
+                            -webkit-appearance: none;
+                            -moz-appearance: none;
+                            background-color: rgb(255, 255, 255);
+                            border: 1px solid #d1d5db;
+                            padding: 10px 14px;
+                            font-size: 1rem;
+                            border-radius: 6px;
+                            width: 20%;
+                            font-family: 'Segoe UI', sans-serif;
+                            background-image: url("data:image/svg+xml;utf8,<svg fill='navy' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+                            background-repeat: no-repeat;
+                            background-position: right 10px center;
+                            background-size: 20px;
+                        }
+
+                        .form-select {
+                            appearance: none;
+                            -webkit-appearance: none;
+                            -moz-appearance: none;
+                            background-color: rgb(255, 255, 255);
+                            border: 1px solid #d1d5db;
+                            padding: 10px 14px;
+                            font-size: 1rem;
+                            border-radius: 6px;
+                            width: 100%;
+                            font-family: 'Segoe UI', sans-serif;
+                            background-image: url("data:image/svg+xml;utf8,<svg fill='navy' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+                            background-repeat: no-repeat;
+                            background-position: right 10px center;
+                            background-size: 20px;
+                        }
+                    </style>
+
+
 </body>
 
 </html>
-
-
-
-
-
-
-
-@include('themes.script')

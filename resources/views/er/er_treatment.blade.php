@@ -12,137 +12,170 @@
         <!-- Main Sidebar Container -->
         @include('themes.er.menuer')
         <div class="content-wrapper">
-            <div class="content-header">
-                <div class="container-fluid">
+            <div class="container-fluid">
+                <div class="container">
+                    <div class="container mt-4">
 
-                    <div class="container mt-5">
-                        <h4>รายชื่อผู้ป่วย ER</h4>
-                        <div class="table-container bg-white p-4 rounded shadow-sm border">
 
-                            <table id="medicalTable" class="table table-striped table-bordered">
-                                <thead class="table-dark">
+                        <div class="container">
+                            <div class="d-flex justify-content-between align-items-center my-4">
+                                <h4>รายชื่อผู้ป่วย ER</h4>
+                            </div>
+                            <div class="table-container bg-white p-4 rounded shadow-sm border">
 
-                                    <tr>
-                                        <th>เลขบัตรประชาชน</th>
-                                        <th>ชื่อทหาร</th>
-                                        <th>อาการ</th>
-                                        <th>วัน-เวลา & สถานที่นัดหมาย</th>
-                                        <th>สถานะเช็คอิน</th>
-                                        <th>สถานะการรักษา</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($treatments as $treatment)
+                                <table class="table table-striped table-bordered data-table">
+                                    <thead class="table-dark">
+
                                         <tr>
-                                            <td>{{ $treatment->checkin->appointment->medicalReport->soldier->soldier_id_card }}
-                                            </td>
-                                            <td>{{ $treatment->checkin->appointment->medicalReport->soldier->first_name }}
-                                                {{ $treatment->checkin->appointment->medicalReport->soldier->last_name }}
-                                            </td>
-                                            <td>{{ $treatment->checkin->appointment->medicalReport->symptom_description }}
-                                            </td>
-                                            <td>{{ $treatment->checkin->appointment->appointment_date }}<br>
-                                                <span class="badge bg-danger">ER</span>
-                                            </td>
-                                            <td>
-                                                @if($treatment->checkin->checkin_status == 'checked-in')
-                                                    <button class="btn btn-custom-checked-in">🟢 มาแล้ว</button>
-                                                @else
-                                                    <button class="btn btn-custom-not-checked-in">🟠 ยังไม่ได้เช็คอิน</button>
-                                                @endif
-
-                                            </td>
-                                            <td>
-                                                @if ($treatment->checkin && $treatment->checkin->treatment)
-                                                    @if ($treatment->checkin->treatment->treatment_status === 'treated')
-                                                        <span>🟢 รักษาแล้ว</span>
+                                            <th>เลขบัตรประชาชน</th>
+                                            <th>ชื่อทหาร</th>
+                                            <th>อาการ</th>
+                                            <th>วัน-เวลา & สถานที่นัดหมาย</th>
+                                            <th>สถานะการรักษา</th>
+                                            <th>วินิฉัยโรค</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($appointments as $appointment)
+                                            <tr>
+                                                <td>{{ $appointment->medicalReport->soldier->soldier_id_card ?? '-' }}
+                                                </td>
+                                                <td>{{ $appointment->medicalReport->soldier->first_name ?? '-' }}
+                                                    {{ $appointment->medicalReport->soldier->last_name ?? '-' }}
+                                                </td>
+                                                <td>
+                                                    @if ($appointment->medicalReport)
+                                                        <button class="btn btn-info btn-sm btn-detail" data-bs-toggle="modal"
+                                                            data-bs-target="#detailModal"
+                                                            data-id="{{ $appointment->medicalReport->id }}"
+                                                            style="font-size: 14px; padding: 8px 15px;">
+                                                            {{ $appointment->medicalReport->symptom_description ?? 'ไม่ระบุอาการ' }}
+                                                        </button>
                                                     @else
-                                                        <button class="btn btn-custom-not-treated btn-sm"
-                                                            onclick="openDiagnosisModal({{ $treatment->checkin->treatment->id }}, {{ $treatment->checkin->appointment->medicalReport->vital_signs_id ?? '0' }})">
-                                                            🟠 ยังไม่ได้รักษา
+                                                        <button class="btn btn-secondary btn-sm" disabled
+                                                            style="font-size: 14px; padding: 8px 15px;">
+                                                            ไม่มีข้อมูล
                                                         </button>
                                                     @endif
-                                                @else
-                                                    <span class="badge bg-secondary">ไม่พบข้อมูล</span>
-                                                @endif
+                                                </td>
 
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                                                <td> <strong>วันที่:</strong>
+                                                    {{ \Carbon\Carbon::parse($appointment->appointment_date)->format('d/m/Y') }}<br>
 
-                            <!-- แสดงผลกรณีไม่มีข้อมูล -->
-                            @if($treatments->isEmpty())
-                                <div class="alert alert-danger text-center">
-                                    ไม่พบข้อมูลผู้ป่วยที่มีสถานะ "in ER"
-                                </div>
-                            @endif
+                                                    <!-- แสดงเวลา -->
+                                                    <strong>เวลา:</strong>
+                                                    {{ \Carbon\Carbon::parse($appointment->appointment_date)->format('H:i') }}
+                                                    น.<br>
+
+                                                    <!-- แสดงสถานที่ -->
+                                                    <strong>สถานที่:</strong> {{ $appointment->appointment_location }}<br>
+
+                                                    <!-- แสดง ER Badge -->
+                                                </td>
+                                                <td>
+                                                    @if (!is_null($appointment->checkin) && $appointment->checkin->checkin_status === 'checked-in')
+                                                        <span
+                                                            class="badge checked-in shadow bg-light text-dark">🟡กำลังเข้ารับการรักษา</span>
+                                                    @else
+                                                        <span class="badge not-checked-in shadow bg-light text-dark">
+                                                            🟠ยังไม่ได้เข้ารับการรักษา</span>
+                                                    @endif
+
+                                                </td>
+                                                <td>
+                                                    @if(isset($appointment->checkin->treatment))
+                                                        <a href="{{ route('er_diagnosis.page', ['treatmentId' => $appointment->checkin->treatment->id]) }}"
+                                                            class="btn btn-primary">
+                                                            กรอกข้อมูลวินิจฉัย
+                                                        </a>
+                                                    @else
+                                                        <span class="badge bg-secondary">ไม่พบข้อมูล</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+
+                                </table>
+
+                                <!-- แสดงผลกรณีไม่มีข้อมูล -->
+                                @if($appointments->isEmpty())
+                                    <div class="alert alert-danger text-center">
+                                        ไม่พบข้อมูลผู้ป่วยที่มีสถานะ "in ER"
+                                    </div>
+                                @endif
+                            </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                        <!-- Modal -->
-                        <div class="modal fade" id="treatmentModal" tabindex="-1" aria-labelledby="diagnosisModalLabel"
-                            aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="treatmentModalLabel">กรอกข้อมูลวินิจฉัย</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <form id="diagnosisForm">
-                                            <input type="hidden" id="treatmentId">
 
-                                            <div class="mb-3">
-                                                <label for="doctorName" class="form-label">ชื่อแพทย์:</label>
-                                                <input type="text" class="form-control" id="doctorName" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="temperature" class="form-label">อุณหภูมิ (°C):</label>
-                                                <input type="number" step="0.1" class="form-control" id="temperature">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="bloodPressure" class="form-label">ความดันโลหิต:</label>
-                                                <input type="text" class="form-control" id="bloodPressure">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="heartRate" class="form-label">อัตราการเต้นของหัวใจ:</label>
-                                                <input type="number" class="form-control" id="heartRate">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="icd10Code" class="form-label">รหัสโรค (ICD10):</label>
-                                                <input type="text" class="form-control" id="icd10Code" name="icd10_code"
-                                                    placeholder="กรอกรหัสโรค , " oninput="fetchDiseaseInfo(this.value)"
-                                                    required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="diseaseDescription" class="form-label">คำอธิบายโรค:</label>
-                                                <input type="text" class="form-control" id="diseaseDescription"
-                                                    readonly>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="treatmentStatus" class="form-label">สถานะการรักษา:</label>
-                                                <select class="form-select" id="treatmentStatus" required>
-                                                    <option value="">-- เลือกสถานะ --</option>
-                                                    <option value="Admit">Admit (รับไว้รักษา)</option>
-                                                    <option value="Refer">Refer (ส่งต่อ)</option>
-                                                    <option value="Discharge">Discharge (จำหน่ายออก)</option>
-                                                    <option value="Follow-up">Follow-up (ติดตามอาการ)</option>
-                                                </select>
-                                            </div>
+    <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content shadow-lg border-0">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">
+                        รายละเอียดผู้ป่วย
+                    </h5>
+                </div>
 
-                                            <button type="submit" class="btn btn-success">บันทึกข้อมูล</button>
-                                        </form>
-                                    </div>
+                <div class="modal-body">
+                    <div class="container">
+                        <h3><strong>พลฯ</strong> <span id="soldierName"></span></h3>
+                        <p><strong>หน่วยต้นสังกัด:</strong> <span id="soldierUnit"></span> |
+                            <strong>ผลัด:</strong> <span id="soldierRotation"></span> |
+                            <strong>หน่วยฝึก:</strong> <span id="soldierTraining"></span>
+                        </p>
+
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <small>อุณหภูมิ</small>
+                                    <h5 id="soldierTemp">-</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <small>ความดันโลหิต</small>
+                                    <h5 id="soldierBP">-</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <small>อัตราการเต้นของหัวใจ</small>
+                                    <h5 id="soldierHeartRate">-</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <small>ระดับความเจ็บปวด</small>
+                                    <h5 id="soldierPain">-</h5>
                                 </div>
                             </div>
                         </div>
 
+                        <h5 class="mt-4">อาการ</h5>
+                        <p id="soldierSymptom"></p>
+                        <h5 class="mt-4">ระดับความเสี่ยง</h5>
+                        <p id="soldierRiskLevel"></p>
+
+
+                        <!-- Add risk level display -->
+
+
                     </div>
                 </div>
-            </div><!-- /.container-fluid -->
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                </div>
+            </div>
         </div>
+    </div>
+
 </body>
 
 <style>
@@ -151,21 +184,12 @@
         color: #333;
     }
 
-    .container {
-        max-width: 1200px;
-        margin: 50px auto;
-        background-color: #fff;
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
+
 
     h4 {
-        color: #2b9b6a;
+        color: rgb(0, 0, 0);
         font-size: 28px;
         font-weight: bold;
-        text-align: center;
-        margin-bottom: 30px;
     }
 
     .table th,
@@ -301,181 +325,70 @@
     }
 </style>
 
-<script>
-    async function updateTreatmentStatus(treatmentId) {
-        let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
-
-        try {
-            // ส่งคำขอเพื่ออัปเดตสถานะการรักษาเป็น "รักษาแล้ว"
-            let response = await fetch(`/treatments/${treatmentId}/update-status`, {
-                method: "PUT",
-                headers: {
-                    "X-CSRF-TOKEN": csrfToken,
-                    "Accept": "application/json",
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    treatment_id: treatmentId,
-                    treatment_status: "treated"  // เปลี่ยนสถานะเป็น 'treated'
-                })
-            });
-
-            let data = await response.json();
-
-            if (response.ok) {
-                Swal.fire("สำเร็จ!", "สถานะการรักษาถูกอัปเดตแล้ว", "success")
-                    .then(() => location.reload()); // หรือทำการอัปเดต UI ตรงจุดนี้แทนการโหลดใหม่ทั้งหน้า
-            } else {
-                Swal.fire("เกิดข้อผิดพลาด", data.message, "error");
-            }
-
-        } catch (error) {
-            Swal.fire("❌ ข้อผิดพลาดเซิร์ฟเวอร์", "กรุณาลองใหม่ หรือแจ้งผู้ดูแลระบบ", "error");
-        }
-    }
-
-</script>
-<script>
-    async function openDiagnosisModal(treatmentId) {
-        console.log("เปิด Modal สำหรับ Treatment ID:", treatmentId);
-        document.getElementById('treatmentId').value = treatmentId;
-
-        // ส่งคำขอไปยัง API ที่จะดึงข้อมูล vital_signs_id จาก treatment_id
-        const response = await fetch(`/api/vital-signs/from-treatment/${treatmentId}`);
-        const data = await response.json();
-
-        if (response.ok) {
-            // หากดึงข้อมูลสำเร็จให้แสดงข้อมูลในฟอร์ม
-            document.getElementById('temperature').value = data.temperature || '';
-            document.getElementById('bloodPressure').value = data.blood_pressure || '';
-            document.getElementById('heartRate').value = data.heart_rate || '';
-        } else {
-            console.error("ไม่พบข้อมูล Vital Signs");
-            Swal.fire("❌ ข้อผิดพลาด", "ไม่พบข้อมูล Vital Signs หรือเกิดข้อผิดพลาดในการดึงข้อมูล", "error");
-        }
-
-        // เปิด Modal ด้วยตัวเลือก backdrop static
-        var modal = new bootstrap.Modal(document.getElementById('treatmentModal'), {
-            backdrop: 'static',  // ป้องกันการปิดด้วยการคลิกนอก Modal
-            keyboard: false      // ป้องกันการปิดด้วยปุ่ม Escape
-        });
-
-        modal.show();  // แสดง Modal
-    }
-
-</script>
-<script>
-    document.getElementById('diagnosisForm').addEventListener('submit', async function (e) {
-        e.preventDefault();
-
-        let treatmentId = document.getElementById('treatmentId').value;
-        let doctorName = document.getElementById('doctorName').value;
-        let temperature = document.getElementById('temperature').value;
-        let bloodPressure = document.getElementById('bloodPressure').value;
-        let heartRate = document.getElementById('heartRate').value;
-        let icd10Code = document.getElementById('icd10Code').value; // รับค่ารหัสโรคหลายตัว
-        let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
-        let treatmentStatus = document.getElementById('treatmentStatus').value;
-
-
-        // ตรวจสอบค่ารหัสโรค
-        if (!icd10Code) {
-            Swal.fire("❌ ข้อผิดพลาด", "กรุณากรอกรหัสโรค (ICD10)", "error");
-            return;
-        }
-
-        // แยกรหัสโรคที่ผู้ใช้กรอก (โดยใช้จุลภาค)
-        let codesArray = icd10Code.split(',');
-
-        try {
-            let response = await fetch("/treatment/add-diagnosis", {
-                method: "POST",
-                headers: {
-                    "X-CSRF-TOKEN": csrfToken,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    treatment_id: treatmentId,
-                    doctor_name: doctorName,
-                    temperature,
-                    blood_pressure: bloodPressure,
-                    heart_rate: heartRate,
-                    icd10_code: icd10Code,
-                    treatment_status: treatmentStatus   // ส่งรหัสโรคหลายตัว
-                })
-            });
-
-            let data = await response.json();
-
-            if (response.ok) {
-                // เรียกใช้ฟังก์ชันเพื่ออัปเดตสถานะการรักษา
-                const statusUpdated = await updateTreatmentStatus(treatmentId);
-
-                if (statusUpdated) {
-                    Swal.fire("สำเร็จ!", "บันทึกข้อมูลและอัปเดตสถานะการรักษาเรียบร้อยแล้ว", "success")
-                        .then(() => location.reload());
-                } else {
-                    Swal.fire("เกิดข้อผิดพลาด", "ไม่สามารถอัปเดตสถานะการรักษาได้", "error");
-                }
-            } else {
-                Swal.fire("เกิดข้อผิดพลาด", data.message || "ไม่ทราบข้อผิดพลาด", "error");
-            }
-        } catch (error) {
-            Swal.fire("❌ ข้อผิดพลาดเซิร์ฟเวอร์", `รายละเอียด: ${error.message || 'ไม่ทราบข้อผิดพลาด'}`, "error");
-        }
-    });
-
-    async function fetchDiseaseInfo(codes) {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        const codeArray = codes.split(',');  // แยกรหัสโรคจากคอมมา (,)
-
-        let diseaseDescriptions = [];  // ตัวแปรสำหรับเก็บคำอธิบายโรค
-
-        try {
-            // ส่งคำขอไปยัง API พร้อมกันทั้งหมดโดยใช้ Promise.all
-            const requests = codeArray.map(async (code) => {
-                const response = await fetch(`/diseases/${code.trim()}`, {
-                    method: 'GET',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                    },
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log(`API Response for ${code.trim()}:`, data);  // ตรวจสอบคำตอบจาก API
-
-                    // ตรวจสอบว่า data.diseases[0] มีข้อมูลหรือไม่
-                    if (data.diseases && data.diseases.length > 0) {
-                        return data.diseases[0].disease_name || `ไม่พบชื่อโรคสำหรับรหัส: ${code.trim()}`;  // ปรับให้ดึงชื่อโรคจาก field ที่ถูกต้อง
-                    } else {
-                        return `ไม่พบคำอธิบายสำหรับรหัสโรค: ${code.trim()}`;
-                    }
-                } else {
-                    return `ไม่พบข้อมูลโรคสำหรับรหัส: ${code.trim()}`;
-                }
-            });
-
-            // รอคำขอทั้งหมดให้เสร็จและเก็บผลลัพธ์ใน diseaseDescriptions
-            diseaseDescriptions = await Promise.all(requests);
-
-            console.log('Disease Descriptions:', diseaseDescriptions);  // ตรวจสอบค่า diseaseDescriptions
-
-            // แสดงคำอธิบายโรคทั้งหมดในฟิลด์
-            document.getElementById('diseaseDescription').value = diseaseDescriptions.join(', ');
-
-        } catch (error) {
-            console.error('เกิดข้อผิดพลาด: ', error);
-            Swal.fire("❌ ข้อผิดพลาด", "ไม่สามารถดึงข้อมูลโรคได้", "error");
-        }
-
-        return diseaseDescriptions;
-    }
-
-
 </script>
 @include('themes.script')
 
 </html>
+
+
+<script>
+    $(document).ready(function () {
+        // เมื่อคลิกปุ่มดูรายละเอียด
+        $('.btn-detail').click(function () {
+            var reportId = $(this).data('id');
+
+            // ส่ง AJAX request เพื่อขอข้อมูล
+            $.ajax({
+                url: '/medical-report/' + reportId,
+                method: 'GET',
+                success: function (response) {
+                    // เติมข้อมูลลงใน Modal
+                    $('#soldierName').text(response.soldier.first_name + ' ' + response.soldier.last_name);
+                    $('#soldierUnit').text(response.soldier.affiliated_unit || '-');
+                    $('#soldierRotation').text(response.soldier.rotation.rotation_name || '-');
+                    $('#soldierTraining').text(response.soldier.trainingUnit.unit_name || '-');
+
+                    // เติมข้อมูลสัญญาณชีพ
+                    $('#soldierTemp').text(response.vital_signs.temperature ? response.vital_signs.temperature + ' °C' : '-');
+                    $('#soldierBP').text(response.vital_signs.blood_pressure || '-');
+                    $('#soldierHeartRate').text(response.vital_signs.heart_rate ? response.vital_signs.heart_rate + ' bpm' : '-');
+                    $('#soldierPain').text(response.vital_signs.pain_score ? response.vital_signs.pain_score + '/10' : '-');
+
+                    // เติมข้อมูลอาการและระดับความเสี่ยง
+                    $('#soldierSymptom').text(response.symptom_description || 'ไม่ระบุอาการ');
+
+                    // แสดงระดับความเสี่ยง
+                    var riskLevel = response.vital_signs.risk_level;
+                    var riskText = '';
+                    var riskClass = '';
+
+                    if (riskLevel === 'red') {
+                        riskText = 'วิกฤติ (สีแดง)';
+                        riskClass = 'badge bg-danger';
+                    } else if (riskLevel === 'yellow') {
+                        riskText = 'เร่งด่วน (สีเหลือง)';
+                        riskClass = 'badge bg-warning';
+                    } else if (riskLevel === 'green') {
+                        riskText = 'ปกติ (สีเขียว)';
+                        riskClass = 'badge bg-success';
+                    } else {
+                        riskText = 'ไม่ระบุ';
+                        riskClass = 'badge bg-secondary';
+                    }
+
+                    $('#soldierRiskLevel').html('<span class="' + riskClass + '">' + riskText + '</span>');
+
+                    // แสดง Modal
+                    $('#detailModal').modal('show');
+                },
+                error: function () {
+                    Swal.fire({
+                        title: 'เกิดข้อผิดพลาด',
+                        text: 'ไม่สามารถโหลดข้อมูลได้',
+                        icon: 'error'
+                    });
+                }
+            });
+        });
+    });
+</script>

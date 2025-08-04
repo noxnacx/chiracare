@@ -41,18 +41,18 @@
     <div class="center-container">
         <div class="content-box">
             <h2 class="mb-4 text-center text-success">
-                <i class="fas fa-id-card"></i> เช็คอินทหารด้วยบัตรประชาชน
+                เช็คอินทหารด้วยบัตรประชาชน
             </h2>
 
             <!-- ✅ ฟอร์มเช็คอินด้วยบัตรประชาชน -->
             <div class="mb-4">
                 <label for="id_card" class="fw-bold">
-                    <i class="fas fa-credit-card"></i> ใส่หมายเลขบัตรประชาชน:
+                    ใส่หมายเลขบัตรประชาชน:
                 </label>
                 <input type="text" id="id_card" class="form-control border-primary rounded-3 shadow-sm"
                     placeholder="กรอกหมายเลขบัตรประชาชน" maxlength="13">
                 <button id="checkInBtn" class="btn btn-success mt-3" data-route="{{ route('checkin.idcard') }}">
-                    <i class="fas fa-sign-in-alt"></i> เช็คอิน
+                    yเช็คอิน
                 </button>
             </div>
 
@@ -162,6 +162,3 @@
 </body>
 
 </html>
-
-
-

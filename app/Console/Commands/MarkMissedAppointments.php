@@ -19,12 +19,12 @@ class MarkMissedAppointments extends Command
         $now = Carbon::now('Asia/Bangkok');
         Log::info("⏰ เวลาปัจจุบัน: {$now->format('Y-m-d H:i:s')}");
 
-        // ตรวจสอบว่าอยู่ในช่วง 17:00 ถึง 17:10
-        $start = $now->copy()->setTime(17, 0, 0);
-        $end = $now->copy()->setTime(22, 40, 0);
+        // ตรวจสอบว่าอยู่ในช่วง 04:00 ถึง 05:59
+        $start = $now->copy()->setTime(00, 0, 0);
+        $end = $now->copy()->setTime(00, 41, 0);
 
         if (!$now->between($start, $end)) {
-            Log::info("⏩ ข้ามการตรวจสอบ (ไม่อยู่ในช่วงเวลา 17:00–17:10)");
+            Log::info("⏩ ข้ามการตรวจสอบ (ไม่อยู่ในช่วงเวลา 04:00–05:59)");
             return;
         }
 
@@ -42,16 +42,31 @@ class MarkMissedAppointments extends Command
             return;
         }
 
+        $processedCount = 0;
+
         foreach ($appointments as $appointment) {
+            // เก็บวันที่นัดเดิมไว้ก่อนเปลี่ยนสถานะ
+            $originalAppointmentDate = $appointment->appointment_date;
+
+            // อัปเดต appointment
             $appointment->status = 'missed';
+            $appointment->was_missed = 1;  // ← เพิ่มอันนี้
+            $appointment->missed_appointment_date = $originalAppointmentDate;  // ← เพิ่มอันนี้
             $appointment->save();
 
+            // อัปเดต checkin
             $appointment->checkin->checkin_status = 'missed';
             $appointment->checkin->save();
 
-            Log::info("🔴 Marked missed: Appointment ID {$appointment->id}, Checkin ID {$appointment->checkin->id}");
+            $processedCount++;
+
+            Log::info("🔴 Marked missed: Appointment ID {$appointment->id}, Checkin ID {$appointment->checkin->id}", [
+                'original_date' => $originalAppointmentDate,
+                'was_missed' => 1,
+                'missed_appointment_date' => $originalAppointmentDate
+            ]);
         }
 
-        Log::info("✅ จบการตรวจสอบ missed ทั้งหมด เวลา " . $now->format('H:i:s'));
+        Log::info("✅ จบการตรวจสอบ missed ทั้งหมด {$processedCount} รายการ เวลา " . $now->format('H:i:s'));
     }
 }
