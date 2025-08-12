@@ -4,224 +4,198 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เลือกแบบประเมิน</title>
-    @include('themes.head')
 
-<style>
-    /* --- Theme Colors & Interactions --- */
-    :root {
-        --theme-secondary-bg: #F8F9FA;
-        --theme-text-dark: #343a40;
-        --theme-text-light: #6c757d;
-        --theme-card-bg: #FFFFFF;
-        --theme-border-color: #dee2e6;
-        --theme-info-color: #A9C5C8;
-        --theme-accent-color: #8E44AD;
-        --theme-accent-darker: #7D3C98;
-        --theme-accent-bg-subtle: rgba(142, 68, 173, 0.1);
-    }
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    /* --- General Styling --- */
-    body {
-        background-color: var(--theme-secondary-bg);
-    }
-    .content-wrapper {
-        background-color: transparent;
-    }
-    h3, h5, h6 {
-        color: var(--theme-text-dark);
-        font-weight: bold;
-    }
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    /* --- Assessment Card Styling --- */
-    .assessment-card {
-        display: block;
-        text-decoration: none;
-        color: inherit;
-        border: 1px solid var(--theme-border-color);
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        transition: transform .2s ease-in-out, box-shadow .2s ease-in-out;
-        height: 100%;
-        cursor: pointer;
-        background-color: var(--theme-card-bg);
-    }
-    .assessment-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.1);
-    }
-    .assessment-card .card-body i {
-        font-size: 2.5rem;
-        color: var(--theme-info-color); /* Themed Icon Color */
-        margin-bottom: 0.5rem;
-    }
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    /* Disabled Card Style */
-    .card-disabled {
-        background-color: #f8f9fa;
-        opacity: 0.7;
-        cursor: not-allowed;
-    }
-    .card-disabled .card-body i, .card-disabled .card-body h6 {
-        color: #adb5bd;
-    }
+    <style>
+        /* --- Custom Theme with Green Accent --- */
+        :root {
+            --bs-body-font-family: 'Sarabun', sans-serif;
+            --bs-body-bg: #f8fafc;
+            --bs-secondary-bg: #ffffff;
+            --bs-tertiary-bg: #f1f5f9;
+            --bs-border-color: #e2e8f0;
+            --bs-body-color: #334155;
+            --bs-heading-color: #1e293b;
+            --bs-secondary-color: #64748b;
+            --bs-primary: #10b981; /* Emerald Green */
+            --bs-primary-rgb: 16, 185, 129;
+            --bs-primary-hover: #059669; /* Darker Green */
+            --bs-border-radius: 0.5rem;
+        }
 
-    .completed-check {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        font-size: 1.5rem;
-    }
+        /* --- Layout --- */
+        .main-container { display: flex; height: 100vh; min-height: 100vh; }
+        .sidebar { width: 256px; flex-shrink: 0; background-color: var(--bs-secondary-bg); box-shadow: 0 0 15px rgba(0,0,0,0.1); transition: transform 0.3s ease-in-out; }
+        .main-content { flex-grow: 1; overflow-y: auto; }
+        @media (max-width: 767.98px) {
+            .sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 1040; transform: translateX(-100%); }
+            .sidebar.active { transform: translateX(0); }
+        }
 
-    /* --- Modal Styling --- */
-    #completedAssessmentModal .modal-content {
-        border-radius: 12px;
-        border: none;
-        box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.2);
-    }
-    #completedAssessmentModal .modal-body {
-        padding: 2rem;
-    }
-    #completedAssessmentModal .modal-icon-wrapper {
-        width: 60px; height: 60px; border-radius: 50%;
-        background-color: var(--theme-accent-bg-subtle);
-        color: var(--theme-accent-color);
-        display: inline-flex; align-items: center; justify-content: center;
-        margin-bottom: 1.5rem;
-    }
-    #completedAssessmentModal .modal-icon-wrapper i {
-        font-size: 1.75rem;
-        color: var(--theme-accent-color);
-    }
-    #completedAssessmentModal .btn-retake {
-        background-color: var(--theme-accent-color);
-        color: #fff;
-        font-weight: 500;
-        border-radius: 8px;
-    }
-    #completedAssessmentModal .btn-retake:hover {
-        background-color: var(--theme-accent-darker);
-    }
-    #completedAssessmentModal .btn-history {
-        border-radius: 8px;
-    }
+        /* --- Sidebar & Navbar --- */
+        .sidebar .nav-link { color: #475569; font-weight: 500; margin-bottom: 0.25rem; display: flex; align-items: center; }
+        .sidebar .nav-link .nav-icon { width: 30px; text-align: center; }
+        .sidebar .nav-link:hover { background-color: var(--bs-tertiary-bg); }
+        .sidebar .nav-link.active { background-color: var(--bs-primary); color: #fff; }
+        .navbar { box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .brand-link { display: flex; align-items: center; justify-content: center; text-decoration: none; }
 
-</style>
+        /* --- Assessment Card Styling --- */
+        .assessment-card {
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+            cursor: pointer;
+            background-color: var(--bs-secondary-bg);
+        }
+        .assessment-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+        .assessment-card-icon {
+            font-size: 2.5rem;
+            color: var(--bs-secondary-color);
+        }
+        .card-disabled {
+            background-color: var(--bs-tertiary-bg);
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* --- Buttons & Modals --- */
+        .btn-primary { background-color: var(--bs-primary); border-color: var(--bs-primary); }
+        .btn-primary:hover { background-color: var(--bs-primary-hover); border-color: var(--bs-primary-hover); }
+        .btn-light { background-color: var(--bs-tertiary-bg); border-color: var(--bs-border-color); color: var(--bs-body-color); }
+        .btn-light:hover { background-color: #e2e8f0; border-color: #cbd5e1; }
+        .modal-content { border: none; border-radius: 0.75rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .icon-circle { width: 60px; height: 60px; background-color: rgba(var(--bs-primary-rgb), 0.1); color: var(--bs-primary); display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+    </style>
 </head>
-
-<body class="hold-transition layout-fixed">
-    <div class="wrapper">
-        @include('themes.soldier.navbarsoldier')
-        @include('themes.soldier.menusoldier')
-
-        <div class="content-wrapper">
-            <div class="content-header">
+<body>
+    <div class="main-container">
+        <aside class="sidebar d-flex flex-column" id="sidebar">
+            <div class="p-3 border-bottom h-auto">
+                <a href="{{ route('soldier.dashboard', ['id' => $soldier->id]) }}" class="brand-link">
+                    <img src="{{ URL::asset('dist/img/AdminLTELogo.png')}}" alt="Chiracare Logo" class="rounded-circle me-2" style="width: 32px; height: 32px;">
+                    <span class="h5 mb-0 fw-bold text-dark">Chiracare</span>
+                </a>
+            </div>
+            <div class="flex-grow-1 p-3">
+                 <ul class="nav flex-column">
+                    <li class="nav-item"><a href="{{ route('profile.inv.soldier', ['id' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-user-circle"></i><p class="ms-2">หน้าแรก (โปรไฟล์)</p></a></li>
+                    <li class="nav-item"><a href="{{ route('soldier.dashboard', ['id' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-tachometer-alt"></i><p class="ms-2">Dashboard</p></a></li>
+                    <li class="nav-item"><a href="{{ route('soldier.view_assessment', ['id' => $soldier->id]) }}" class="nav-link active"><i class="nav-icon fas fa-clipboard-list"></i><p class="ms-2">ทำแบบประเมิน</p></a></li>
+                    <li class="nav-item"><a href="{{ route('assessment.history', ['soldierId' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-clipboard-check"></i><p class="ms-2">ประวัติการทำแบบประเมิน</p></a></li>
+                    @if(isset($soldier))
+                    <li class="nav-item"><a href="{{ route('soldier.my_appointments', ['id' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-calendar-check"></i><p class="ms-2">นัดหมายของฉัน</p></a></li>
+                    @endif
+                    <li class="nav-item"><a href="{{ route('soldier.edit_personal_info', ['id' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-user-edit"></i><p class="ms-2">แก้ไขข้อมูลส่วนตัว</p></a></li>
+                 </ul>
+            </div>
+            <div class="p-3 border-top h-auto mt-auto">
+                <a href="{{ route('soldier.logout') }}" class="nav-link text-danger" onclick="event.preventDefault(); document.getElementById('logout-form').submit();"><i class="nav-icon fas fa-sign-out-alt"></i><p class="ms-2">ออกจากระบบ</p></a>
+            </div>
+        </aside>
+        <div class="main-content d-flex flex-column">
+            <nav class="navbar bg-white">
                 <div class="container-fluid">
-                    <h3 class="mb-4 text-center fw-bold">
-                        <i class="fas fa-tasks me-2" style="color: var(--theme-info-color);"></i>เลือกแบบประเมิน
-                    </h3>
+                    <button class="btn border-0 d-md-none" type="button" id="menu-toggle"><i class="fas fa-bars"></i></button>
+                    <div class="ms-auto fw-medium">พลฯ {{ $soldier->first_name }} {{ $soldier->last_name }}</div>
+                </div>
+            </nav>
+            <div class="flex-grow-1 p-3 p-md-4">
+                <div class="container" style="max-width: 960px;">
+                    <div class="text-center mb-5">
+                        <i class="fas fa-tasks fa-2x text-primary"></i>
+                        <h2 class="h3 fw-bold mt-2">เลือกแบบประเมิน</h2>
+                    </div>
 
-                    <div class="container" style="max-width: 960px;">
-                        <div class="row justify-content-center g-4">
+                    <div class="row justify-content-center g-4">
+                        @php
+                            $assessments = [['type' => 'smoking', 'icon' => 'fas fa-smoking', 'label' => 'การสูบบุหรี่'], ['type' => 'alcohol', 'icon' => 'fas fa-wine-glass-alt', 'label' => 'การดื่มแอลกอฮอล์'], ['type' => 'drug_use', 'icon' => 'fas fa-pills', 'label' => 'การใช้สารเสพติด'], ['type' => 'depression', 'icon' => 'fas fa-theater-masks', 'label' => 'ภาวะซึมเศร้า'], ['type' => 'suicide_risk', 'icon' => 'fas fa-heart-broken', 'label' => 'ความเสี่ยงฆ่าตัวตาย']];
+                        @endphp
+
+                        @foreach ($assessments as $assessment)
                             @php
-                                $assessments = [
-                                    ['type' => 'smoking', 'icon' => 'fas fa-smoking', 'label' => 'การสูบบุหรี่'],
-                                    ['type' => 'alcohol', 'icon' => 'fas fa-wine-glass-alt', 'label' => 'การดื่มแอลกอฮอล์'],
-                                    ['type' => 'drug_use', 'icon' => 'fas fa-pills', 'label' => 'การใช้สารเสพติด'],
-                                    ['type' => 'depression', 'icon' => 'fas fa-theater-masks', 'label' => 'ภาวะซึมเศร้า'],
-                                    ['type' => 'suicide_risk', 'icon' => 'fas fa-heart-broken', 'label' => 'ความเสี่ยงฆ่าตัวตาย']
-                                ];
+                                $type = $assessment['type'];
+                                $isDisabled = ($type === 'depression' || $type === 'suicide_risk') && $hasScheduledCase;
+                                $isCompleted = in_array($assessment['type'], $completedAssessments);
                             @endphp
 
-                            @foreach ($assessments as $assessment)
-                                @php
-                                    $type = $assessment['type'];
-                                    $isDisabled = ($type === 'depression' || $type === 'suicide_risk') && $hasScheduledCase;
-                                @endphp
-
-                                <div class="col-6 col-sm-6 col-md-4 col-lg-3 mb-4">
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <div class="position-relative h-100">
                                     @if ($isDisabled)
-                                        <div class="card text-center p-3 position-relative h-100 card-disabled">
-                                            <div class="card-body d-flex flex-column justify-content-center align-items-center">
-                                                <i class="{{ $assessment['icon'] }}"></i>
-                                                <h6 class="mt-2 mb-0">{{ $assessment['label'] }}</h6>
-                                            </div>
-                                            <span class="badge bg-warning text-dark position-absolute top-0 start-100 translate-middle p-1" style="font-size: 0.6rem;">
-                                                รอนัดพบแพทย์
-                                            </span>
+                                        <div class="card text-center p-3 h-100 card-disabled d-flex flex-column justify-content-center">
+                                            <i class="{{ $assessment['icon'] }} assessment-card-icon text-muted"></i>
+                                            <h6 class="mt-2 mb-0 fw-normal text-muted">{{ $assessment['label'] }}</h6>
                                         </div>
+                                        <span class="badge bg-warning text-dark position-absolute top-0 start-100 translate-middle p-1 border border-light" style="font-size: 0.6rem;">รอนัดพบแพทย์</span>
                                     @else
-                                        <div class="assessment-card text-center p-3 position-relative"
-                                             data-type="{{ $assessment['type'] }}"
-                                             data-completed="{{ in_array($assessment['type'], $completedAssessments) ? 'true' : 'false' }}"
-                                             data-url-show="{{ route('assessment.show', ['soldier_id' => $soldier->id, 'type' => $assessment['type']]) }}">
-
-                                            <div class="card-body d-flex flex-column justify-content-center align-items-center">
-                                                <i class="{{ $assessment['icon'] }}"></i>
-                                                <h6 class="mt-2 mb-0">{{ $assessment['label'] }}</h6>
-                                            </div>
-
-                                            @if(in_array($assessment['type'], $completedAssessments))
-                                                <div class="completed-check" title="ทำแบบประเมินนี้แล้ว">
-                                                    <i class="fas fa-check-circle text-success"></i>
-                                                </div>
-                                            @endif
+                                        <div class="assessment-card text-center p-3 h-100 d-flex flex-column justify-content-center" data-completed="{{ $isCompleted ? 'true' : 'false' }}" data-url-show="{{ route('assessment.show', ['soldier_id' => $soldier->id, 'type' => $assessment['type']]) }}">
+                                            <i class="{{ $assessment['icon'] }} assessment-card-icon"></i>
+                                            <h6 class="mt-2 mb-0 fw-bold">{{ $assessment['label'] }}</h6>
                                         </div>
+                                        @if($isCompleted)
+                                            <div class="position-absolute top-0 end-0 p-2" title="ทำแบบประเมินนี้แล้ว">
+                                                <i class="fas fa-check-circle text-success fs-5"></i>
+                                            </div>
+                                        @endif
                                     @endif
                                 </div>
-                            @endforeach
                             </div>
+                        @endforeach
                     </div>
                 </div>
             </div>
-        </div>
-
-        @include('themes.soldier.footersoldier')
+            </div>
     </div>
+
+    <form id="logout-form" action="{{ route('soldier.logout') }}" method="POST" class="d-none">@csrf</form>
 
     <div class="modal fade" id="completedAssessmentModal" tabindex="-1" aria-labelledby="completedAssessmentModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-body text-center position-relative">
-                    <div class="modal-icon-wrapper">
-                        <i class="fas fa-clipboard-check"></i>
-                    </div>
-
-                    <h5 class="modal-title mb-2" id="completedAssessmentModalLabel">ทำแบบประเมินแล้ว</h5>
+                <div class="modal-body p-4 text-center">
+                    <div class="icon-circle mx-auto mb-3"><i class="fas fa-clipboard-check fs-4 text-primary"></i></div>
+                    <h5 class="modal-title h5 mb-2" id="completedAssessmentModalLabel">ทำแบบประเมินแล้ว</h5>
                     <p class="mb-4 text-muted">คุณได้ทำแบบประเมินนี้ไปแล้ว ต้องการดำเนินการใดต่อ?</p>
-
-                    <div class="d-grid gap-2 mb-3">
-                        <a href="#" id="retakeAssessmentBtn" class="btn btn-retake p-2">
-                            <i class="fas fa-redo-alt me-1"></i> ทำแบบประเมินซ้ำ
-                        </a>
-                        <a href="#" id="viewHistoryBtn" class="btn btn-outline-secondary btn-history p-2">
-                            <i class="fas fa-history me-1"></i> ดูประวัติการทำทั้งหมด
-                        </a>
+                    <div class="d-grid gap-2">
+                        <a href="#" id="retakeAssessmentBtn" class="btn btn-primary"><i class="fas fa-redo-alt me-1"></i> ทำแบบประเมินซ้ำ</a>
+                        <a href="#" id="viewHistoryBtn" class="btn btn-light"><i class="fas fa-history me-1"></i> ดูประวัติการทำทั้งหมด</a>
                     </div>
-                    <div class="text-center">
-                       <button type="button" class="btn btn-link text-secondary" data-bs-dismiss="modal">
-                           ยกเลิก
-                       </button>
-                    </div>
+                    <button type="button" class="btn btn-link text-secondary mt-2" data-bs-dismiss="modal">ยกเลิก</button>
                 </div>
             </div>
         </div>
     </div>
 
-    @include('themes.script')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const completedModalEl = document.getElementById('completedAssessmentModal');
-            const completedModal = new bootstrap.Modal(completedModalEl);
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Sidebar Toggle Logic ---
+        const menuButton = document.getElementById('menu-toggle');
+        const sidebar = document.getElementById('sidebar');
+        if (menuButton && sidebar) {
+            menuButton.addEventListener('click', () => sidebar.classList.toggle('active'));
+        }
 
+        // --- Assessment Card and Modal Logic (from original file) ---
+        const completedModalEl = document.getElementById('completedAssessmentModal');
+        if(completedModalEl) {
+            const completedModal = new bootstrap.Modal(completedModalEl);
             const retakeBtn = document.getElementById('retakeAssessmentBtn');
             const historyBtn = document.getElementById('viewHistoryBtn');
-            const historyUrl = "{{ route('assessment.history', $soldier->id) }}";
+            const historyUrl = "{{ route('assessment.history', ['soldierId' => $soldier->id]) }}";
 
-            const assessmentCards = document.querySelectorAll('.assessment-card');
-
-            assessmentCards.forEach(card => {
+            document.querySelectorAll('.assessment-card').forEach(card => {
                 card.addEventListener('click', function() {
                     const isCompleted = this.dataset.completed === 'true';
                     const assessmentUrl = this.dataset.urlShow;
@@ -235,7 +209,8 @@
                     }
                 });
             });
-        });
+        }
+    });
     </script>
 </body>
 </html>

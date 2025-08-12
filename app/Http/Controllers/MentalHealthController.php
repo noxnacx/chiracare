@@ -504,4 +504,91 @@ public function downloadDashboardPDF(Request $request)
     return $pdf->download($fileName);
 }
 
+
+public function assessmentSummary(Request $request)
+    {
+        // -- 1. ดึงข้อมูลสำหรับ Dropdown ฟิลเตอร์ --
+        $units = TrainingUnit::all();
+        $rotations = Rotation::all();
+
+        // -- 2. สร้าง Query หลัก พร้อมฟิลเตอร์พื้นฐาน (หน่วย, ผลัด, ค้นหา) --
+        $baseQuery = Soldier::query()
+            ->when($request->filled('unit'), function ($q) use ($request) {
+                $q->where('unit_id', $request->unit);
+            })
+            ->when($request->filled('rotation'), function ($q) use ($request) {
+                $q->where('rotation_id', $request->rotation);
+            })
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $searchTerm = $request->search;
+                $q->where(function($subq) use ($searchTerm) {
+                    $subq->where(DB::raw("CONCAT(first_name, ' ', last_name)"), 'LIKE', "%{$searchTerm}%")
+                         ->orWhere('soldier_id_card', 'LIKE', "%{$searchTerm}%");
+                });
+            });
+
+        // -- 3. ดึงข้อมูลจาก Query หลักเพื่อนับจำนวนสำหรับ Stat Cards --
+        $allFilteredSoldiers = $baseQuery->get();
+        $totalCount = $allFilteredSoldiers->count();
+        $completedCount = $allFilteredSoldiers->where('initial_assessment_complete', true)->count();
+        $incompleteCount = $totalCount - $completedCount;
+
+
+        // -- 4. ++ แก้ไข: Clone Query หลักขึ้นมาใหม่ก่อนจะเพิ่มเงื่อนไขสำหรับตาราง ++ --
+        $soldiersForTableQuery = $baseQuery->clone()->with(['trainingUnit', 'rotation']);
+
+        // -- 5. เพิ่มฟิลเตอร์จาก Stat Cards (ถ้ามี) ให้กับ Query ที่ Clone มา --
+        if ($request->input('completed_status') == 'complete') {
+            $soldiersForTableQuery->where('initial_assessment_complete', true);
+        } elseif ($request->input('completed_status') == 'incomplete') {
+            $soldiersForTableQuery->where('initial_assessment_complete', false);
+        }
+
+        // -- 6. ดึงข้อมูลสำหรับตารางจาก Query ที่ผ่านการกรองทั้งหมดแล้ว --
+        $soldiersForTable = $soldiersForTableQuery->get();
+
+        // -- 7. เตรียมข้อมูลคะแนนสำหรับแสดงผล (ส่วนนี้เหมือนเดิม) --
+        $assessmentTypes = ['smoking', 'alcohol', 'drug_use', 'suicide_risk', 'depression'];
+        $assessmentLabels = [
+            'smoking' => 'การสูบบุหรี่',
+            'alcohol' => 'การดื่มสุรา',
+            'drug_use' => 'สารเสพติด',
+            'suicide_risk' => 'เสี่ยงฆ่าตัวตาย',
+            'depression' => 'ภาวะซึมเศร้า'
+        ];
+
+        $assessmentData = [];
+        foreach ($soldiersForTable as $soldier) {
+            $latestScores = [];
+            foreach ($assessmentTypes as $type) {
+                $score = AssessmentScore::where('soldier_id', $soldier->id)
+                                        ->where('assessment_type', $type)
+                                        ->latest('created_at')
+                                        ->first();
+                $latestScores[$type] = $score ? $score->total_score : '-';
+            }
+            $assessmentData[] = [
+                'soldier' => $soldier,
+                'scores' => $latestScores,
+            ];
+        }
+
+        // -- 8. ส่งข้อมูลทั้งหมดไปยัง View (ส่วนนี้เหมือนเดิม) --
+        return view('mental_health.summary', [
+            'assessmentData' => $assessmentData,
+            'assessmentTypes' => $assessmentTypes,
+            'assessmentLabels' => $assessmentLabels,
+            'units' => $units,
+            'rotations' => $rotations,
+            'totalCount' => $totalCount,
+            'completedCount' => $completedCount,
+            'incompleteCount' => $incompleteCount,
+            'request' => $request
+        ]);
+    }
+
+
+
+
+
 }
