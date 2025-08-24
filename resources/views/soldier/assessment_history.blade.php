@@ -79,7 +79,7 @@
                 </a>
             </div>
             <div class="flex-grow-1 p-3">
-                 <ul class="nav flex-column">
+                <ul class="nav flex-column">
                     <li class="nav-item"><a href="{{ route('profile.inv.soldier', ['id' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-user-circle"></i><p class="ms-2">หน้าแรก (โปรไฟล์)</p></a></li>
                     <li class="nav-item"><a href="{{ route('soldier.dashboard', ['id' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-tachometer-alt"></i><p class="ms-2">Dashboard</p></a></li>
                     <li class="nav-item"><a href="{{ route('soldier.view_assessment', ['id' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-clipboard-list"></i><p class="ms-2">ทำแบบประเมิน</p></a></li>
@@ -88,7 +88,7 @@
                     <li class="nav-item"><a href="{{ route('soldier.my_appointments', ['id' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-calendar-check"></i><p class="ms-2">นัดหมายของฉัน</p></a></li>
                     @endif
                     <li class="nav-item"><a href="{{ route('soldier.edit_personal_info', ['id' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-user-edit"></i><p class="ms-2">แก้ไขข้อมูลส่วนตัว</p></a></li>
-                 </ul>
+                </ul>
             </div>
             <div class="p-3 border-top h-auto mt-auto">
                 <a href="{{ route('soldier.logout') }}" class="nav-link text-danger" onclick="event.preventDefault(); document.getElementById('logout-form').submit();"><i class="nav-icon fas fa-sign-out-alt"></i><p class="ms-2">ออกจากระบบ</p></a>
@@ -122,19 +122,28 @@
                         @endphp
                         <div class="card history-card mb-3"><div class="card-body d-flex flex-column flex-sm-row align-items-sm-center justify-content-between">
                             <div class="d-flex align-items-center mb-3 mb-sm-0"><div class="icon-circle me-3 flex-shrink-0"><i class="bi {{ $details['icon'] }} fs-4"></i></div><div><h5 class="h6 fw-bold mb-0">{{ $details['label'] }}</h5><small class="text-muted">ทำเมื่อ: {{ \Carbon\Carbon::parse($item->assessment_date)->thaidate('j M Y, H:i') }} น.</small></div></div>
-                            <div class="d-flex align-items-center justify-content-between justify-content-sm-end gap-2"><div class="text-end"><span class="fw-bold fs-5">{{ number_format($item->total_score, 0) }}<small class="text-muted">/{{$details['max']}}</small></span><br><span class="badge rounded-pill {{ $riskBadges[$item->risk_level] ?? 'bg-secondary' }}">{{ $item->risk_level }}</span></div><div class="btn-group"><button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#assessmentModal{{ $item->id }}" title="ดูรายละเอียด"><i class="bi bi-eye"></i></button><button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#completedAssessmentModal" data-retake-url="{{ route('assessment.show', ['soldier_id' => $soldier->id, 'type' => $assessmentType]) }}" title="ทำซ้ำ"><i class="bi bi-arrow-clockwise"></i></button></div></div>
+                            <div class="d-flex align-items-center justify-content-between justify-content-sm-end gap-2">
+                                <div class="text-end">
+                                    <span class="fw-bold fs-5">{{ number_format($item->total_score, 0) }}<small class="text-muted">/{{$details['max']}}</small></span><br>
+                                    {{-- The risk level will now be calculated by JavaScript --}}
+                                    <span class="badge rounded-pill risk-level-badge" data-type="{{ $assessmentType }}" data-score="{{ $item->total_score }}"></span>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#assessmentModal{{ $item->id }}" title="ดูรายละเอียด"><i class="bi bi-eye"></i></button>
+                                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#completedAssessmentModal" data-retake-url="{{ route('assessment.show', ['soldier_id' => $soldier->id, 'type' => $assessmentType]) }}" title="ทำซ้ำ"><i class="bi bi-arrow-clockwise"></i></button>
+                                </div>
+                            </div>
                         </div></div>
                     @empty
                         <div class="card text-center py-5"><div class="card-body"><i class="bi bi-journal-x fs-1 text-muted"></i><h4 class="mt-3">ไม่พบข้อมูลการประเมิน</h4><p class="text-muted">ยังไม่มีประวัติในช่วงเวลาหรือประเภทที่เลือก</p></div></div>
                     @endforelse
 
                     <div class="mt-4 d-flex justify-content-end">
-                        {{-- THIS IS THE FIX --}}
                         {{ $histories->withQueryString()->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
             </div>
-            </div>
+        </div>
     </div>
 
     <form id="logout-form" action="{{ route('soldier.logout') }}" method="POST" class="d-none">@csrf</form>
@@ -145,7 +154,8 @@
             <p><strong>ประเภท:</strong> {{ $assessmentDetails[optional($item->assessmentType)->assessment_type ?? 'N/A']['label'] ?? 'N/A' }}</p>
             <p><strong>วันที่:</strong> {{ \Carbon\Carbon::parse($item->assessment_date)->thaidate('j F Y, H:i') }} น.</p>
             <p><strong>คะแนน:</strong> {{ $item->total_score }}</p>
-            <p><strong>ระดับความเสี่ยง:</strong> {{ $item->risk_level }}</p>
+            {{-- The risk level will also be calculated by JavaScript here --}}
+            <p><strong>ระดับความเสี่ยง:</strong> <span class="badge rounded-pill risk-level-badge" data-type="{{ optional($item->assessmentType)->assessment_type }}" data-score="{{ $item->total_score }}"></span></p>
         </div>
     </div></div></div>
     @endforeach
@@ -172,10 +182,9 @@
             menuButton.addEventListener('click', () => sidebar.classList.toggle('active'));
         }
 
-        // --- Original Retake Modal Logic ---
+        // --- Retake Modal Logic ---
         const completedModalEl = document.getElementById('completedAssessmentModal');
         if(completedModalEl) {
-            const completedModal = new bootstrap.Modal(completedModalEl);
             const retakeBtn = document.getElementById('retakeAssessmentBtn');
             completedModalEl.addEventListener('show.bs.modal', function(event) {
                 const button = event.relatedTarget;
@@ -183,6 +192,57 @@
                 retakeBtn.setAttribute('href', retakeUrl);
             });
         }
+
+        // --- [START OF FIX] ---
+        // This function now contains the correct risk level logic from AssessmentController.php
+        function getRiskLevel(type, score) {
+            score = parseInt(score, 10);
+            const riskLevels = {
+                low: { text: 'ต่ำ', class: 'bg-success-subtle text-success-emphasis' },
+                medium: { text: 'ปานกลาง', class: 'bg-warning-subtle text-warning-emphasis' },
+                high: { text: 'สูง', class: 'bg-danger-subtle text-danger-emphasis' }
+            };
+
+            switch (type) {
+                case 'depression':
+                    if (score >= 13) return riskLevels.high;
+                    if (score >= 7) return riskLevels.medium;
+                    return riskLevels.low;
+                case 'suicide_risk':
+                    if (score >= 10) return riskLevels.high;
+                    if (score >= 5) return riskLevels.medium;
+                    return riskLevels.low;
+                case 'smoking':
+                    if (score >= 6) return riskLevels.high;
+                    if (score >= 4) return riskLevels.medium;
+                    return riskLevels.low;
+                case 'alcohol':
+                    if (score >= 20) return riskLevels.high;
+                    if (score >= 16) return riskLevels.medium;
+                    return riskLevels.low;
+                case 'drug_use':
+                    if (score >= 27) return riskLevels.high;
+                    if (score >= 4) return riskLevels.medium;
+                    return riskLevels.low;
+                default:
+                    return { text: 'N/A', class: 'bg-secondary-subtle' };
+            }
+        }
+
+        // This script will find all risk level badges and apply the correct text and color
+        const badges = document.querySelectorAll('.risk-level-badge');
+        badges.forEach(badge => {
+            const type = badge.dataset.type;
+            const score = badge.dataset.score;
+            if (type && score) {
+                const risk = getRiskLevel(type, score);
+                badge.textContent = risk.text;
+                // Clear old classes before adding the new one
+                badge.className = 'badge rounded-pill risk-level-badge';
+                badge.classList.add(...risk.class.split(' '));
+            }
+        });
+        // --- [END OF FIX] ---
     });
     </script>
 </body>

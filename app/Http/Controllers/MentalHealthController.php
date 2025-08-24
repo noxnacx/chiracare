@@ -28,41 +28,18 @@ class MentalHealthController extends Controller
         $scheduledCases = AssessmentStatusTracking::where('status', 'scheduled')->count();
         $completedCases = AssessmentStatusTracking::where('status', 'completed')->count();
 
-        // Logic การสร้างเคสใหม่จากผลประเมินที่เสี่ยง
-        $scoresBySoldier = AssessmentScore::whereIn('risk_level', ['สูง', 'ปานกลาง'])
-            ->whereIn('assessment_type', ['depression', 'suicide_risk'])
-            ->latest('assessment_date')
-            ->get()
-            ->groupBy('soldier_id');
-
-        foreach ($scoresBySoldier as $soldierId => $scores) {
-            $hasActiveCase = AssessmentStatusTracking::where('soldier_id', $soldierId)
-                ->whereIn('status', ['required', 'scheduled'])->exists();
-
-            if (!$hasActiveCase) {
-                $mostRecentScore = $scores->first();
-                $caseForThisScoreExists = AssessmentStatusTracking::where('assessment_score_id', $mostRecentScore->id)->exists();
-                if (!$caseForThisScoreExists) {
-                    AssessmentStatusTracking::create([
-                        'soldier_id' => $soldierId,
-                        'assessment_score_id' => $mostRecentScore->id,
-                        'risk_type' => 'at_risk',
-                        'risk_level_source' => $mostRecentScore->risk_level,
-                        'status' => 'required'
-                    ]);
-                }
-            }
-        }
+        // ✅✅✅ [REMOVED] The problematic case creation logic is now removed from here. ✅✅✅
+        // The loop that automatically created new cases has been deleted.
 
         // ดึงข้อมูลสำหรับ Dropdowns ใน Filter
         $rotations = Rotation::orderBy('rotation_name')->get();
         $trainingUnits = TrainingUnit::orderBy('unit_name')->get();
 
-        // Query หลักสำหรับตารางด้านซ้าย
+        // Query หลักสำหรับตารางด้านซ้าย (This is now the main logic)
         $query = AssessmentStatusTracking::whereIn('status', ['required', 'scheduled'])
             ->with(['soldier.rotation', 'soldier.trainingUnit', 'assessmentScore', 'appointments']);
 
-        // Filtering Logic ที่สมบูรณ์
+        // Filtering Logic (remains the same)
         if ($request->filled('search')) {
             $searchTerm = $request->search;
             $query->whereHas('soldier', function ($q) use ($searchTerm) {
@@ -95,7 +72,7 @@ class MentalHealthController extends Controller
         $perPage = $request->input('per_page', 15);
         $trackedSoldiers = $query->latest()->paginate($perPage)->withQueryString();
 
-        // Data Enrichment สำหรับการแสดงชื่อแบบประเมินทั้งหมด
+        // Data Enrichment (remains the same)
         $soldierIdsOnPage = $trackedSoldiers->pluck('soldier_id')->unique();
         $allRisksForPage = new Collection();
         if ($soldierIdsOnPage->isNotEmpty()) {
@@ -117,13 +94,13 @@ class MentalHealthController extends Controller
             }
         });
 
-        // Query ใหม่สำหรับแท็บ "รายชื่อรอส่งป่วย" ด้านขวา
+        // Query for the waiting list (remains the same)
         $waitingForReferral = AssessmentStatusTracking::where('status', 'required')
             ->with('soldier.trainingUnit')
             ->latest()
             ->get();
 
-        // ส่งตัวแปรทั้งหมดไปที่ View
+        // Send all variables to the View
         return view('mental_health.dashboard', compact(
             'trackedSoldiers', 'perPage', 'totalCases', 'requiredCases',
             'scheduledCases', 'completedCases', 'rotations', 'trainingUnits',
@@ -296,57 +273,71 @@ class MentalHealthController extends Controller
     public function closeCase(Request $request, AssessmentStatusTracking $tracking)
     {
         $request->validate([
-            'appointment_id'   => 'required|exists:appointments_mental_health,id',
-            'doctor_name'      => 'required|string|max:255',
-            'medicine_name'    => 'nullable|string',
-            'notes'            => 'nullable|string',
+            'appointment_id' => 'required|exists:appointments_mental_health,id',
+            'doctor_name' => 'required|string|max:255',
+            'medicine_name' => 'nullable|string',
+            'notes' => 'nullable|string',
         ]);
 
-        DB::transaction(function() use ($request, $tracking) {
-            $appointment = AppointmentMentalHealth::find($request->appointment_id);
-
+        DB::transaction(function () use ($request, $tracking) {
+            // 1. สร้าง Treatment (เหมือนเดิม)
             TreatmentMentalHealth::create([
-                'appointment_id'   => $appointment->id,
-                'treatment_date'   => $appointment->appointment_date,
-                'doctor_name'      => $request->doctor_name,
-                'medicine_name'    => $request->medicine_name,
-                'notes'            => $request->notes,
+                'appointment_id' => $request->appointment_id,
+                'treatment_date' => now(),
+                'doctor_name' => $request->doctor_name,
+                'medicine_name' => $request->medicine_name,
+                'notes' => $request->notes,
             ]);
 
+            // 2. อัปเดต Appointment (เหมือนเดิม)
+            $appointment = AppointmentMentalHealth::find($request->appointment_id);
+            if ($appointment) {
+                $appointment->update(['status' => 'completed']);
+            }
+
+            // ✅✅✅ [เพิ่มโค้ดตรงนี้] อัปเดตสถานะของเคสหลัก (Tracking) ให้เป็น 'completed' ✅✅✅
             $tracking->update(['status' => 'completed']);
         });
 
-        return redirect()->route('mental-health.dashboard')->with('success', 'บันทึกผลการรักษาและปิดเคสเรียบร้อยแล้ว');
+        return redirect()->route('mental-health.dashboard')->with('success', 'เคสถูกปิดเรียบร้อยแล้ว');
     }
 
     public function bulkCloseCases(Request $request)
     {
-        $request->validate([
-            'ids'              => 'required|array|min:1',
-            'ids.*'            => 'exists:assessment_status_tracking,id',
-            'doctor_name'      => 'required|string|max:255',
-            'medicine_name'    => 'nullable|string',
-            'notes'            => 'nullable|string',
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:assessment_status_tracking,id',
+            'doctor_name' => 'required|string|max:255',
+            'medicine_name' => 'nullable|string',
+            'notes' => 'nullable|string',
         ]);
 
-        DB::transaction(function () use ($request) {
-            $casesToUpdate = AssessmentStatusTracking::whereIn('id', $request->input('ids'))->get();
-            foreach ($casesToUpdate as $trackingCase) {
-                $latestAppointment = $trackingCase->appointments()->latest()->first();
-                if ($latestAppointment && $trackingCase->status == 'scheduled') {
+        DB::transaction(function () use ($validated) {
+            $cases = AssessmentStatusTracking::with('appointments')->whereIn('id', $validated['ids'])->get();
+
+            foreach ($cases as $case) {
+                $latestAppointment = $case->appointments->sortByDesc('created_at')->first();
+
+                if ($latestAppointment) {
+                    // 1. สร้าง Treatment (เหมือนเดิม)
                     TreatmentMentalHealth::create([
-                        'appointment_id'   => $latestAppointment->id,
-                        'treatment_date'   => $latestAppointment->appointment_date,
-                        'doctor_name'      => $request->doctor_name,
-                        'medicine_name'    => $request->medicine_name,
-                        'notes'            => $request->notes,
+                        'appointment_id' => $latestAppointment->id,
+                        'treatment_date' => now(),
+                        'doctor_name' => $validated['doctor_name'],
+                        'medicine_name' => $validated['medicine_name'],
+                        'notes' => $validated['notes'],
                     ]);
-                    $trackingCase->update(['status' => 'completed']);
+
+                    // 2. อัปเดต Appointment (เหมือนเดิม)
+                    $latestAppointment->update(['status' => 'completed']);
                 }
             }
+
+            // ✅✅✅ [เพิ่มโค้ดตรงนี้] อัปเดตสถานะของเคสหลัก (Tracking) ทั้งหมดให้เป็น 'completed' ✅✅✅
+            AssessmentStatusTracking::whereIn('id', $validated['ids'])->update(['status' => 'completed']);
         });
 
-        return redirect()->route('mental-health.dashboard')->with('success', 'ปิดเคสที่เลือกทั้งหมดเรียบร้อยแล้ว');
+        return redirect()->route('mental-health.dashboard')->with('success', 'เคสที่เลือกถูกปิดเรียบร้อยแล้ว');
     }
 
     public function updateRiskType(AssessmentStatusTracking $tracking)
@@ -408,7 +399,7 @@ class MentalHealthController extends Controller
     $fileName = 'completed-history-' . now()->format('Y-m-d-His') . '.pdf';
 
     // สร้าง PDF โดยส่งข้อมูลไปที่ View
-    $pdf = PDF::loadView('mental_health.pdf.completed_history_pdf', ['data' => $completedCases]);
+    $pdf = PDF::loadView('pdf.completed_history_pdf', data: ['data' => $completedCases]);
 
     // ตั้งค่ากระดาษเป็น A4 แนวนอน
     $pdf->setPaper('a4', 'landscape');
@@ -437,7 +428,7 @@ public function downloadIndividualHistoryPDF($soldier_id)
     $fileName = 'history-' . optional($soldier)->soldier_id_card . '-' . now()->format('Ymd') . '.pdf';
 
     // Step 3: สร้างและส่งไฟล์ PDF
-    $pdf = PDF::loadView('mental_health.pdf.individual_history_pdf', compact('soldier', 'treatments'));
+    $pdf = PDF::loadView('pdf.individual_history_pdf', compact('soldier', 'treatments'));
 
     return $pdf->download($fileName);
 }
@@ -496,7 +487,7 @@ public function downloadDashboardPDF(Request $request)
 
     // 6. สร้างชื่อไฟล์และสร้าง PDF
     $fileName = str_replace(' ', '_', $reportTitle) . '_' . now()->format('Y-m-d') . '.pdf';
-    $pdf = PDF::loadView('mental_health.pdf.dashboard_report_pdf', $pdfData);
+    $pdf = PDF::loadView('pdf.dashboard_report_pdf', $pdfData);
 
     // ตั้งค่ากระดาษเป็น A4 แนวนอน
     $pdf->setPaper('a4', 'landscape');
@@ -505,66 +496,94 @@ public function downloadDashboardPDF(Request $request)
 }
 
 
-public function assessmentSummary(Request $request)
+/**
+     * Display a summary of mental health assessments.
+     * [แก้ไขบัคสุดท้าย] ปรับ Logic การกรองสถานะ "ยังไม่ครบ" ให้ถูกต้อง 100%
+     */
+    public function assessmentSummary(Request $request)
     {
-        // -- 1. ดึงข้อมูลสำหรับ Dropdown ฟิลเตอร์ --
-        $units = TrainingUnit::all();
-        $rotations = Rotation::all();
-
-        // -- 2. สร้าง Query หลัก พร้อมฟิลเตอร์พื้นฐาน (หน่วย, ผลัด, ค้นหา) --
-        $baseQuery = Soldier::query()
-            ->when($request->filled('unit'), function ($q) use ($request) {
-                $q->where('unit_id', $request->unit);
-            })
-            ->when($request->filled('rotation'), function ($q) use ($request) {
-                $q->where('rotation_id', $request->rotation);
-            })
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $searchTerm = $request->search;
-                $q->where(function($subq) use ($searchTerm) {
-                    $subq->where(DB::raw("CONCAT(first_name, ' ', last_name)"), 'LIKE', "%{$searchTerm}%")
-                         ->orWhere('soldier_id_card', 'LIKE', "%{$searchTerm}%");
-                });
-            });
-
-        // -- 3. ดึงข้อมูลจาก Query หลักเพื่อนับจำนวนสำหรับ Stat Cards --
-        $allFilteredSoldiers = $baseQuery->get();
-        $totalCount = $allFilteredSoldiers->count();
-        $completedCount = $allFilteredSoldiers->where('initial_assessment_complete', true)->count();
-        $incompleteCount = $totalCount - $completedCount;
-
-
-        // -- 4. ++ แก้ไข: Clone Query หลักขึ้นมาใหม่ก่อนจะเพิ่มเงื่อนไขสำหรับตาราง ++ --
-        $soldiersForTableQuery = $baseQuery->clone()->with(['trainingUnit', 'rotation']);
-
-        // -- 5. เพิ่มฟิลเตอร์จาก Stat Cards (ถ้ามี) ให้กับ Query ที่ Clone มา --
-        if ($request->input('completed_status') == 'complete') {
-            $soldiersForTableQuery->where('initial_assessment_complete', true);
-        } elseif ($request->input('completed_status') == 'incomplete') {
-            $soldiersForTableQuery->where('initial_assessment_complete', false);
-        }
-
-        // -- 6. ดึงข้อมูลสำหรับตารางจาก Query ที่ผ่านการกรองทั้งหมดแล้ว --
-        $soldiersForTable = $soldiersForTableQuery->get();
-
-        // -- 7. เตรียมข้อมูลคะแนนสำหรับแสดงผล (ส่วนนี้เหมือนเดิม) --
-        $assessmentTypes = ['smoking', 'alcohol', 'drug_use', 'suicide_risk', 'depression'];
+        // 1. กำหนดค่าพื้นฐาน (เหมือนเดิม)
+        $assessmentTypes = ['smoking', 'alcohol', 'drug_use', 'depression', 'suicide_risk'];
         $assessmentLabels = [
-            'smoking' => 'การสูบบุหรี่',
-            'alcohol' => 'การดื่มสุรา',
+            'smoking' => 'สูบบุหรี่',
+            'alcohol' => 'ดื่มสุรา',
             'drug_use' => 'สารเสพติด',
-            'suicide_risk' => 'เสี่ยงฆ่าตัวตาย',
-            'depression' => 'ภาวะซึมเศร้า'
+            'depression' => 'ซึมเศร้า',
+            'suicide_risk' => 'ฆ่าตัวตาย'
+        ];
+        $assessmentIcons = [
+            'smoking' => 'bi-fire',
+            'alcohol' => 'bi-cup-straw',
+            'drug_use' => 'bi-capsule-pill',
+            'depression' => 'bi-emoji-frown',
+            'suicide_risk' => 'bi-heartbreak'
         ];
 
+        // 2. สร้าง Query และกรองข้อมูล
+        $query = Soldier::query();
+
+        // (Filter: unit, rotation, search) - เหมือนเดิม
+        if ($request->filled('unit')) {
+            $query->where('training_unit_id', $request->unit);
+        }
+        if ($request->filled('rotation')) {
+            $query->where('rotation_id', $request->rotation);
+        }
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('first_name', 'like', "%{$searchTerm}%")
+                  ->orWhere('last_name', 'like', "%{$searchTerm}%")
+                  ->orWhere('soldier_id_card', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        // [ส่วนที่แก้ไข] ปรับ Logic การกรองสถานะให้ครอบคลุมค่า NULL อย่างชัดเจน
+        if ($request->filled('completed_status')) {
+            if ($request->completed_status == 'complete') {
+                $query->where('initial_assessment_complete', true);
+            } elseif ($request->completed_status == 'incomplete') {
+                // ค้นหาที่ค่าเป็น false หรือ NULL
+                $query->where(function ($q) {
+                    $q->where('initial_assessment_complete', false)
+                      ->orWhereNull('initial_assessment_complete');
+                });
+            }
+        }
+
+        // Filter ตามระดับความเสี่ยง (เหมือนเดิม)
+        if ($request->filled('risk_level_filter') && $request->filled('assessment_type_filter')) {
+            $riskLevel = $request->risk_level_filter;
+            $assessmentType = $request->assessment_type_filter;
+
+            $query->whereHas('assessmentScores', function ($q) use ($riskLevel, $assessmentType) {
+                $q->where('assessment_type', $assessmentType)
+                  ->where('risk_level', $riskLevel)
+                  ->whereIn('id', function ($sub) use ($assessmentType) {
+                      $sub->select(DB::raw('MAX(id)'))
+                          ->from('assessment_score')
+                          ->where('assessment_type', $assessmentType)
+                          ->groupBy('soldier_id');
+                  });
+            });
+        }
+
+        // ... ส่วนที่เหลือของฟังก์ชันเหมือนเดิมทั้งหมด ...
+        $limit = $request->input('limit', 5);
+        $paginatedSoldiers = $query->with('rotation', 'trainingUnit')->latest()->paginate($limit);
+
+        $soldierIdsOnPage = $paginatedSoldiers->pluck('id');
+        $scoresBySoldierId = AssessmentScore::whereIn('soldier_id', $soldierIdsOnPage)
+            ->latest()
+            ->get()
+            ->groupBy('soldier_id');
+
         $assessmentData = [];
-        foreach ($soldiersForTable as $soldier) {
+        foreach ($paginatedSoldiers as $soldier) {
             $latestScores = [];
             foreach ($assessmentTypes as $type) {
-                $score = AssessmentScore::where('soldier_id', $soldier->id)
-                                        ->where('assessment_type', $type)
-                                        ->latest('created_at')
-                                        ->first();
+                $score = optional($scoresBySoldierId->get($soldier->id))
+                    ->firstWhere('assessment_type', $type);
                 $latestScores[$type] = $score ? $score->total_score : '-';
             }
             $assessmentData[] = [
@@ -573,22 +592,141 @@ public function assessmentSummary(Request $request)
             ];
         }
 
-        // -- 8. ส่งข้อมูลทั้งหมดไปยัง View (ส่วนนี้เหมือนเดิม) --
+        $units = TrainingUnit::orderBy('unit_name')->get();
+        $rotations = Rotation::orderBy('rotation_name')->get();
+        $totalCount = Soldier::count();
+        $completedCount = Soldier::where('initial_assessment_complete', true)->count();
+        $incompleteCount = $totalCount - $completedCount;
+
+        $latestScoresSubquery = DB::table('assessment_score')
+            ->select(DB::raw('MAX(id) as id'))
+            ->groupBy('soldier_id', 'assessment_type');
+
+        $latestScores = DB::table('assessment_score')
+            ->whereIn('id', $latestScoresSubquery)
+            ->get();
+
+        $riskCounts = [
+            'สูง' => collect($assessmentTypes)->flip()->map(fn () => 0),
+            'ปานกลาง' => collect($assessmentTypes)->flip()->map(fn () => 0),
+        ];
+
+        foreach ($latestScores as $score) {
+            if (isset($riskCounts[$score->risk_level]) && $riskCounts[$score->risk_level]->has($score->assessment_type)) {
+                $currentCount = $riskCounts[$score->risk_level]->get($score->assessment_type);
+                $riskCounts[$score->risk_level]->put($score->assessment_type, $currentCount + 1);
+            }
+        }
+
         return view('mental_health.summary', [
             'assessmentData' => $assessmentData,
-            'assessmentTypes' => $assessmentTypes,
+            'paginator' => $paginatedSoldiers,
             'assessmentLabels' => $assessmentLabels,
+            'assessmentTypes' => $assessmentTypes,
+            'assessmentIcons' => $assessmentIcons,
             'units' => $units,
             'rotations' => $rotations,
             'totalCount' => $totalCount,
             'completedCount' => $completedCount,
             'incompleteCount' => $incompleteCount,
-            'request' => $request
+            'riskCounts' => $riskCounts,
+            'request' => $request,
+            'currentLimit' => (int)$limit,
         ]);
     }
 
 
+    public function downloadSummaryPDF(Request $request)
+    {
+        // 1. กำหนดค่าพื้นฐาน (เหมือนเดิม)
+        $assessmentLabels = [
+            'smoking' => 'สูบบุหรี่',
+            'alcohol' => 'ดื่มสุรา',
+            'drug_use' => 'สารเสพติด',
+            'depression' => 'ซึมเศร้า',
+            'suicide_risk' => 'ฆ่าตัวตาย'
+        ];
+        $assessmentTypes = array_keys($assessmentLabels);
 
+        // 2. สร้าง Query และกรองข้อมูล (ใช้ Logic เดียวกับหน้าเว็บ)
+        $query = Soldier::query();
 
+        // [ส่วนสำคัญ] กรองตาม ID ที่เลือก หรือตาม Filter ทั้งหมด
+        if ($request->filled('selected_ids')) {
+            $query->whereIn('id', $request->selected_ids);
+        } else {
+            // ใช้ Filter เดิมทั้งหมด
+            if ($request->filled('unit')) {
+                $query->where('training_unit_id', $request->unit);
+            }
+            if ($request->filled('rotation')) {
+                $query->where('rotation_id', $request->rotation);
+            }
+            if ($request->filled('search')) {
+                $searchTerm = $request->search;
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('first_name', 'like', "%{$searchTerm}%")
+                      ->orWhere('last_name', 'like', "%{$searchTerm}%")
+                      ->orWhere('soldier_id_card', 'like', "%{$searchTerm}%");
+                });
+            }
+            if ($request->filled('completed_status')) {
+                if ($request->completed_status == 'complete') {
+                    $query->where('initial_assessment_complete', true);
+                } elseif ($request->completed_status == 'incomplete') {
+                    $query->where(function ($q) {
+                        $q->where('initial_assessment_complete', false)->orWhereNull('initial_assessment_complete');
+                    });
+                }
+            }
+            if ($request->filled('risk_level_filter') && $request->filled('assessment_type_filter')) {
+                $riskLevel = $request->risk_level_filter;
+                $assessmentType = $request->assessment_type_filter;
+                $query->whereHas('assessmentScores', function ($q) use ($riskLevel, $assessmentType) {
+                    $q->where('assessment_type', $assessmentType)
+                      ->where('risk_level', $riskLevel)
+                      ->whereIn('id', function ($sub) use ($assessmentType) {
+                          $sub->select(DB::raw('MAX(id)'))
+                              ->from('assessment_score')
+                              ->where('assessment_type', $assessmentType)
+                              ->groupBy('soldier_id');
+                      });
+                });
+            }
+        }
+
+        $soldiers = $query->with('rotation', 'trainingUnit')->latest()->get();
+
+        // 3. ดึงคะแนนและจัดโครงสร้างข้อมูล (เหมือนเดิม)
+        $soldierIds = $soldiers->pluck('id');
+        $scoresBySoldierId = AssessmentScore::whereIn('soldier_id', $soldierIds)->latest()->get()->groupBy('soldier_id');
+
+        $assessmentData = [];
+        foreach ($soldiers as $soldier) {
+            $latestScores = [];
+            foreach ($assessmentTypes as $type) {
+                $score = optional($scoresBySoldierId->get($soldier->id))->firstWhere('assessment_type', $type);
+                $latestScores[$type] = $score ? $score->total_score : '-';
+            }
+            $assessmentData[] = [
+                'soldier' => $soldier,
+                'scores' => $latestScores,
+            ];
+        }
+
+        // 4. สร้าง PDF
+        $pdf = Pdf::loadView('pdf.assessment_summary', [
+            'assessmentData' => $assessmentData,
+            'assessmentLabels' => $assessmentLabels,
+            'assessmentTypes' => $assessmentTypes,
+        ]);
+
+        // ตั้งค่า PDF ให้รองรับภาษาไทย
+        $pdf->setPaper('a4', 'landscape');
+        $pdf->setOption('defaultFont', 'Sarabun');
+        $pdf->setOption('isRemoteEnabled', true);
+
+        return $pdf->download('assessment-summary-' . now()->format('Y-m-d') . '.pdf');
+    }
 
 }

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Carbon; // ✅ 1. เพิ่มบรรทัดนี้
+use Illuminate\Pagination\Paginator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Paginator::useBootstrapFive();
         // ✅ 2. เพิ่มโค้ดส่วนนี้ทั้งหมดเข้าไป
         Carbon::macro('thaidate', function ($format) {
             $date = $this; // $this ในที่นี้คือ object ของ Carbon

@@ -19,4 +19,6 @@ class AppointmentMentalHealth extends Model
     {
         return $this->hasOne(TreatmentMentalHealth::class, 'appointment_id');
     }
+
+
 }

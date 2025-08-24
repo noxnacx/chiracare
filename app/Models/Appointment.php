@@ -65,4 +65,6 @@ class Appointment extends Model
         return $query->where('was_missed', true)
             ->whereDate('missed_appointment_date', today());
     }
+
+
 }

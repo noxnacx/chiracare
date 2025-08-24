@@ -610,6 +610,7 @@ Route::prefix('mental-health')->name('mental-health.')->group(function () {
     Route::get('/history/{soldier_id}/download', [MentalHealthController::class, 'downloadIndividualHistoryPDF'])->name('history.download');
     Route::post('/dashboard/download', [MentalHealthController::class, 'downloadDashboardPDF'])->name('dashboard.download');
     Route::get('/assessment-summary', [MentalHealthController::class, 'assessmentSummary'])->name('assessment.summary');
+    Route::post('/assessment-summary/download', [MentalHealthController::class, 'downloadSummaryPDF'])->name('assessment.summary.download');
 
 
 });

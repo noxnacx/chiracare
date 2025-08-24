@@ -51,7 +51,6 @@
         .modal-header, .modal-footer { border-color: var(--card-border-color); }
         .main-content-grid { display: grid; grid-template-columns: 1fr 420px; gap: 1.5rem; }
         @media (max-width: 1200px) { .main-content-grid { grid-template-columns: 1fr; } }
-
         .stat-item { display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 0; border-bottom: 1px solid var(--card-border-color); }
         .stat-item:last-child { border-bottom: none; }
         .stat-item .stat-label { font-weight: 500; }
@@ -60,7 +59,6 @@
         .stat-item .text-warning { color: var(--bs-warning) !important; }
         .stat-item .text-primary { color: var(--bs-primary) !important; }
         .stat-item .text-success { color: var(--bs-success) !important; }
-
         .waiting-list-item { display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 0; border-bottom: 1px solid var(--card-border-color); }
         .waiting-list-item:last-child { border-bottom: none; }
         .action-item { display: flex; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid var(--card-border-color); transition: background-color 0.2s ease-in-out; }
@@ -145,7 +143,13 @@
                                         </thead>
                                         <tbody>
                                             @forelse ($trackedSoldiers as $item)
-                                                <tr>
+                                                <tr data-status="{{ $item->status }}"
+                                                    data-soldier-name="{{ $item->soldier->first_name ?? '' }} {{ $item->soldier->last_name ?? '' }}"
+                                                    data-appointment-id="{{ optional($item->appointments->sortByDesc('created_at')->first())->id }}"
+                                                    data-appointment-date="{{ optional($item->appointments->sortByDesc('created_at')->first())->appointment_date }}"
+                                                    data-appointment-time="{{ optional($item->appointments->sortByDesc('created_at')->first())->appointment_time }}"
+                                                    data-appointment-location="{{ optional($item->appointments->sortByDesc('created_at')->first())->appointment_location }}"
+                                                    data-appointment-notes="{{ optional($item->appointments->sortByDesc('created_at')->first())->notes }}">
                                                     <td class="text-center"><input type="checkbox" class="form-check-input soldier-checkbox" value="{{ $item->id }}"></td>
                                                     <td><div class="fw-bold">{{ $item->soldier->first_name ?? '' }} {{ $item->soldier->last_name ?? '' }}</div><small class="text-muted">{{ $item->soldier->soldier_id_card ?? 'N/A' }}</small></td>
                                                     <td><div>{{ $item->soldier->rotation->rotation_name ?? '-' }}</div><small class="text-muted">{{ $item->soldier->trainingUnit->unit_name ?? '-' }}</small></td>
@@ -164,19 +168,27 @@
                                                             @if($item->status == 'required')
                                                                 <a href="#" class="action-item-link refer-btn" data-id="{{ $item->id }}" data-bs-toggle="modal" data-bs-target="#appointmentModal"><div class="action-item"><div class="action-icon-wrapper bg-primary-soft"><i class="fas fa-paper-plane text-primary"></i></div><div class="action-text"><div class="action-title">ส่งป่วย</div><div class="action-desc">สร้างนัดหมายเพื่อส่งพบแพทย์</div></div><div class="action-arrow"><i class="fas fa-chevron-right"></i></div></div></a>
                                                             @elseif($item->status == 'scheduled' && $latestAppointment)
+                                                                <a href="#" class="action-item-link view-appointment-btn" data-bs-toggle="modal" data-bs-target="#viewAppointmentModal">
+                                                                    <div class="action-item">
+                                                                        <div class="action-icon-wrapper bg-info-soft"><i class="fas fa-calendar-day text-info"></i></div>
+                                                                        <div class="action-text">
+                                                                            <div class="action-title">ดูนัดหมาย</div>
+                                                                            <div class="action-desc">ดูรายละเอียดนัดหมายล่าสุด</div>
+                                                                        </div>
+                                                                        <div class="action-arrow"><i class="fas fa-chevron-right"></i></div>
+                                                                    </div>
+                                                                </a>
                                                                 <a href="#" class="action-item-link edit-appointment-btn" data-bs-toggle="modal" data-bs-target="#editAppointmentModal" data-appointment-id="{{ $latestAppointment->id }}" data-date="{{ $latestAppointment->appointment_date }}" data-time="{{ \Carbon\Carbon::parse($latestAppointment->appointment_time)->format('H:i') }}" data-location="{{ $latestAppointment->appointment_location }}" data-notes="{{ $latestAppointment->notes ?? '' }}"><div class="action-item"><div class="action-icon-wrapper bg-warning-soft"><i class="fas fa-pencil-alt text-warning"></i></div><div class="action-text"><div class="action-title">แก้ไขนัดหมาย</div><div class="action-desc">อัปเดตวัน, เวลา, และสถานที่</div></div><div class="action-arrow"><i class="fas fa-chevron-right"></i></div></div></a>
                                                                 <a href="#" class="action-item-link close-case-btn" data-bs-toggle="modal" data-bs-target="#treatmentModal" data-tracking-id="{{ $item->id }}" data-appointment-id="{{ $latestAppointment->id }}"><div class="action-item"><div class="action-icon-wrapper bg-success-soft"><i class="fas fa-check-double text-success"></i></div><div class="action-text"><div class="action-title">ปิดเคส</div><div class="action-desc">บันทึกผลการรักษาและปิดเคส</div></div><div class="action-arrow"><i class="fas fa-chevron-right"></i></div></div></a>
                                                             @endif
                                                             <hr class="my-0">
                                                             @if($item->risk_type == 'at_risk')
-                                                                {{-- ✅✅✅ START: Corrected Alignment Form ✅✅✅ --}}
                                                                 <form action="{{ route('mental-health.risk-type.update', $item->id) }}" method="POST" onsubmit="return confirm('คุณต้องการเปลี่ยนเคสนี้เป็น \'เคสมีประวัติเดิม\' ใช่หรือไม่?');" class="action-item-link d-block">
                                                                     @csrf
                                                                     <button type="submit" class="btn btn-link text-decoration-none text-start p-0 w-100">
                                                                         <div class="action-item"><div class="action-icon-wrapper bg-secondary-soft"><i class="fas fa-user-clock text-secondary"></i></div><div class="action-text"><div class="action-title">เปลี่ยนเป็นเคสประวัติเดิม</div><div class="action-desc">สำหรับเคสที่ไม่ได้มาจากผลประเมิน</div></div><div class="action-arrow"><i class="fas fa-chevron-right"></i></div></div>
                                                                     </button>
                                                                 </form>
-                                                                {{-- ✅✅✅ END: Corrected Alignment Form ✅✅✅ --}}
                                                             @endif
                                                             <a class="action-item-link" href="{{ route('mental-health.history', $item->soldier_id) }}"><div class="action-item"><div class="action-icon-wrapper bg-secondary-soft"><i class="fas fa-history text-secondary"></i></div><div class="action-text"><div class="action-title">ดูประวัติทั้งหมด</div><div class="action-desc">ดูไทม์ไลน์การรักษาก่อนหน้า</div></div><div class="action-arrow"><i class="fas fa-chevron-right"></i></div></div></a>
                                                         </template>
@@ -213,7 +225,7 @@
                     <div class="card">
                         <div class="card-header"><i class="fas fa-list-alt me-2"></i> รายชื่อรอส่งป่วย</div>
                         <div class="card-body p-3" style="max-height: 45vh; overflow-y: auto;">
-                             @forelse ($waitingForReferral as $item)
+                               @forelse ($waitingForReferral as $item)
                                 <div class="waiting-list-item">
                                     <div>
                                         <div class="fw-bold">{{ $item->soldier->first_name }} {{ $item->soldier->last_name }}</div>
@@ -225,19 +237,18 @@
                                         @if($item->status == 'required')
                                             <a href="#" class="action-item-link refer-btn" data-id="{{ $item->id }}" data-bs-toggle="modal" data-bs-target="#appointmentModal"><div class="action-item"><div class="action-icon-wrapper bg-primary-soft"><i class="fas fa-paper-plane text-primary"></i></div><div class="action-text"><div class="action-title">ส่งป่วย</div><div class="action-desc">สร้างนัดหมายเพื่อส่งพบแพทย์</div></div><div class="action-arrow"><i class="fas fa-chevron-right"></i></div></div></a>
                                         @elseif($item->status == 'scheduled' && $latestAppointment)
+                                            <a href="#" class="action-item-link view-appointment-btn" data-bs-toggle="modal" data-bs-target="#viewAppointmentModal"><div class="action-item"><div class="action-icon-wrapper bg-info-soft"><i class="fas fa-calendar-day text-info"></i></div><div class="action-text"><div class="action-title">ดูนัดหมาย</div><div class="action-desc">ดูรายละเอียดนัดหมายล่าสุด</div></div><div class="action-arrow"><i class="fas fa-chevron-right"></i></div></div></a>
                                             <a href="#" class="action-item-link edit-appointment-btn" data-bs-toggle="modal" data-bs-target="#editAppointmentModal" data-appointment-id="{{ $latestAppointment->id }}" data-date="{{ $latestAppointment->appointment_date }}" data-time="{{ \Carbon\Carbon::parse($latestAppointment->appointment_time)->format('H:i') }}" data-location="{{ $latestAppointment->appointment_location }}" data-notes="{{ $latestAppointment->notes ?? '' }}"><div class="action-item"><div class="action-icon-wrapper bg-warning-soft"><i class="fas fa-pencil-alt text-warning"></i></div><div class="action-text"><div class="action-title">แก้ไขนัดหมาย</div><div class="action-desc">อัปเดตวัน, เวลา, และสถานที่</div></div><div class="action-arrow"><i class="fas fa-chevron-right"></i></div></div></a>
                                             <a href="#" class="action-item-link close-case-btn" data-bs-toggle="modal" data-bs-target="#treatmentModal" data-tracking-id="{{ $item->id }}" data-appointment-id="{{ $latestAppointment->id }}"><div class="action-item"><div class="action-icon-wrapper bg-success-soft"><i class="fas fa-check-double text-success"></i></div><div class="action-text"><div class="action-title">ปิดเคส</div><div class="action-desc">บันทึกผลการรักษาและปิดเคส</div></div><div class="action-arrow"><i class="fas fa-chevron-right"></i></div></div></a>
                                         @endif
                                         <hr class="my-0">
                                         @if($item->risk_type == 'at_risk')
-                                            {{-- ✅✅✅ START: Corrected Alignment Form ✅✅✅ --}}
                                             <form action="{{ route('mental-health.risk-type.update', $item->id) }}" method="POST" onsubmit="return confirm('คุณต้องการเปลี่ยนเคสนี้เป็น \'เคสมีประวัติเดิม\' ใช่หรือไม่?');" class="action-item-link d-block">
                                                 @csrf
                                                 <button type="submit" class="btn btn-link text-decoration-none text-start p-0 w-100">
                                                     <div class="action-item"><div class="action-icon-wrapper bg-secondary-soft"><i class="fas fa-user-clock text-secondary"></i></div><div class="action-text"><div class="action-title">เปลี่ยนเป็นเคสประวัติเดิม</div><div class="action-desc">สำหรับเคสที่ไม่ได้มาจากผลประเมิน</div></div><div class="action-arrow"><i class="fas fa-chevron-right"></i></div></div>
                                                 </button>
                                             </form>
-                                            {{-- ✅✅✅ END: Corrected Alignment Form ✅✅✅ --}}
                                         @endif
                                         <a class="action-item-link" href="{{ route('mental-health.history', $item->soldier_id) }}"><div class="action-item"><div class="action-icon-wrapper bg-secondary-soft"><i class="fas fa-history text-secondary"></i></div><div class="action-text"><div class="action-title">ดูประวัติทั้งหมด</div><div class="action-desc">ดูไทม์ไลน์การรักษาก่อนหน้า</div></div><div class="action-arrow"><i class="fas fa-chevron-right"></i></div></div></a>
                                     </template>
@@ -257,20 +268,54 @@
 {{-- All Modals --}}
 <div class="modal fade" id="filterModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="filterModalLabel"><i class="fas fa-filter me-2"></i>ตัวกรองเพิ่มเติม</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-6"><label for="rotation_id" class="form-label">ผลัด</label><select name="rotation_id" class="form-select" form="filterForm"><option value="">-- ทุกผลัด --</option>@foreach($rotations as $rotation)<option value="{{ $rotation->id }}" {{ request('rotation_id') == $rotation->id ? 'selected' : '' }}>{{ $rotation->rotation_name }}</option>@endforeach</select></div><div class="col-md-6"><label for="training_unit_id" class="form-label">หน่วยฝึก</label><select name="training_unit_id" class="form-select" form="filterForm"><option value="">-- ทุกหน่วยฝึก --</option>@foreach($trainingUnits as $unit)<option value="{{ $unit->id }}" {{ request('training_unit_id') == $unit->id ? 'selected' : '' }}>{{ $unit->unit_name }}</option>@endforeach</select></div><div class="col-md-6"><label for="risk_type" class="form-label">ประเภทความเสี่ยง</label><select name="risk_type" class="form-select" form="filterForm"><option value="">-- ทุกประเภท --</option><option value="at_risk" {{ request('risk_type') == 'at_risk' ? 'selected' : '' }}>จากผลประเมิน</option><option value="prior_history" {{ request('risk_type') == 'prior_history' ? 'selected' : '' }}>มีประวัติเดิม</option></select></div><div class="col-md-6"><label for="status" class="form-label">สถานะ</label><select name="status" class="form-select" form="filterForm"><option value="">-- ทุกสถานะ --</option><option value="required" {{ request('status') == 'required' ? 'selected' : '' }}>รอส่งป่วย</option><option value="scheduled" {{ request('status') == 'scheduled' ? 'selected' : '' }}>นัดแล้วหมายแล้ว</option></select></div><div class="col-12"><label class="form-label">ช่วงวันที่ได้รับข้อมูล</label><div class="input-group"><input type="date" name="start_date" class="form-control" value="{{ request('start_date') }}" title="วันที่เริ่ม" form="filterForm"><span class="input-group-text">ถึง</span><input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}" title="วันที่สิ้นสุด" form="filterForm"></div></div></div></div><div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">ปิด</button><button type="submit" class="btn btn-primary" form="filterForm"><i class="fas fa-check me-1"></i>ใช้ตัวกรอง</button></div></div></div></div>
 <div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="actionModalLabel">จัดการ</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body p-0" id="actionModalBody"></div></div></div></div>
-<div class="modal fade" id="appointmentModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form id="appointmentForm" action="{{ route('mental-health.appointment.create') }}" method="POST">@csrf<div id="tracking_ids_container"></div><div class="modal-header"><h5 class="modal-title">สร้างนัดหมายส่งป่วย</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>คุณกำลังจะสร้างนัดหมายสำหรับ <strong id="selected_count">0</strong> รายการ</p><div class="mb-3"><label class="form-label">วันที่นัดหมาย <span class="text-danger">*</span></label><input type="date" name="appointment_date" class="form-control" required min="{{ date('Y-m-d') }}"></div><div class="mb-3"><label class="form-label">เวลา <span class="text-danger">*</span></label><input type="time" name="appointment_time" class="form-control" required></div><div class="mb-3"><label class="form-label">โรงพยาบาล <span class="text-danger">*</span></label><select name="appointment_location" class="form-select" required><option value="">-- กรุณาเลือก --</option><option value="รพ.ค่ายจิรประวัติ">รพ.ค่ายจิรประวัติ</option><option value="รพ.สวรรค์ประชารักษ์ (จิตเวชสี่แคว)">รพ.สวรรค์ประชารักษ์ (จิตเวชสี่แคว)</option><option value="รพ.จิตเวชราชนครินทร์">รพ.จิตเวชราชนครินทร์</option></select></div><div class="mb-3"><label class="form-label">ข้อมูลเพิ่มเติม</label><textarea name="notes" class="form-control" rows="3"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button><button type="submit" class="btn btn-primary">บันทึกนัดหมาย</button></div></form></div></div></div>
-<div class="modal fade" id="editAppointmentModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form id="editAppointmentForm" action="{{ route('mental-health.appointment.update') }}" method="POST">@csrf<div id="edit_appointment_ids_container"></div><div class="modal-header"><h5 class="modal-title">แก้ไขข้อมูลนัดหมาย</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p class="text-muted"><small>หมายเหตุ: กรอกเฉพาะช่องที่ต้องการแก้ไข</small></p><div class="mb-3"><label class="form-label">วันที่นัดหมายใหม่</label><input type="date" name="appointment_date" class="form-control" min="{{ date('Y-m-d') }}"></div><div class="mb-3"><label class="form-label">เวลาใหม่</label><input type="time" name="appointment_time" class="form-control"></div><div class="mb-3"><label class="form-label">โรงพยาบาลใหม่</label><select name="appointment_location" class="form-select"><option value="">-- ไม่เปลี่ยนแปลง --</option><option value="รพ.ค่ายจิรประวัติ">รพ.ค่ายจิรประวัติ</option><option value="รพ.สวรรค์ประชารักษ์ (จิตเวชสี่แคว)">รพ.สวรรค์ประชารักษ์ (จิตเวชสี่แคว)</option><option value="รพ.จิตเวชราชนครินทร์">รพ.จิตเวชราชนครินทร์</option></select></div><div class="mb-3"><label class="form-label">ข้อมูลเพิ่มเติม</label><textarea name="notes" class="form-control" rows="3"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button><button type="submit" class="btn btn-info">บันทึกการเปลี่ยนแปลง</button></div></form></div></div></div>
-<div class="modal fade" id="treatmentModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form id="treatmentForm" method="POST">@csrf<input type="hidden" name="appointment_id" id="treatment_appointment_id"><div class="modal-header"><h5 class="modal-title">บันทึกผลการรักษาและปิดเคส</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">แพทย์ผู้รักษา <span class="text-danger">*</span></label><input type="text" name="doctor_name" class="form-control" required placeholder="ระบุชื่อแพทย์"></div><div class="mb-3"><label class="form-label">ยาที่รักษา</label><textarea name="medicine_name" class="form-control" rows="3" placeholder="ระบุยาที่ใช้รักษา..."></textarea></div><div class="mb-3"><label class="form-label">ข้อมูลเพิ่มเติม</label><textarea name="notes" class="form-control" rows="3" placeholder="เช่น การวินิจฉัย, แผนการรักษา..."></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button><button type="submit" class="btn btn-success">บันทึกและปิดเคส</button></div></form></div></div></div>
-<div class="modal fade" id="bulkCloseFormModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form id="bulkCloseForm" action="{{ route('mental-health.case.bulk-close') }}" method="POST">@csrf<div id="bulk_close_ids_container"></div><div class="modal-header"><h5 class="modal-title">บันทึกและปิดเคสที่เลือก</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>คุณกำลังจะบันทึกผลและปิดเคสสำหรับ <strong id="bulk_close_count">0</strong> รายการ</p><div class="mb-3"><label class="form-label">แพทย์ผู้รักษา <span class="text-danger">*</span></label><input type="text" name="doctor_name" class="form-control" required placeholder="ระบุชื่อแพทย์ (สำหรับทุกเคสที่เลือก)"></div><div class="mb-3"><label class="form-label">ยาที่รักษา</label><textarea name="medicine_name" class="form-control" rows="3"></textarea></div><div class="mb-3"><label class="form-label">ข้อมูลเพิ่มเติม</label><textarea name="notes" class="form-control" rows="3"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button><button type="submit" class="btn btn-warning">ยืนยันและปิดเคสทั้งหมด</button></div></form></div></div></div>
+<div class="modal fade" id="appointmentModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form id="appointmentForm" action="{{ route('mental-health.appointment.create') }}" method="POST">@csrf<div id="tracking_ids_container"></div><div class="modal-header"><h5 class="modal-title">สร้างนัดหมายส่งป่วย</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="appointment_patient_list" class="mb-3"></div><div class="mb-3"><label class="form-label">วันที่นัดหมาย <span class="text-danger">*</span></label><input type="date" name="appointment_date" class="form-control" required min="{{ date('Y-m-d') }}"></div><div class="mb-3"><label class="form-label">เวลา <span class="text-danger">*</span></label><input type="time" name="appointment_time" class="form-control" required></div><div class="mb-3"><label class="form-label">โรงพยาบาล <span class="text-danger">*</span></label><select name="appointment_location" class="form-select" required><option value="">-- กรุณาเลือก --</option><option value="รพ.ค่ายจิรประวัติ">รพ.ค่ายจิรประวัติ</option><option value="รพ.สวรรค์ประชารักษ์ (จิตเวชสี่แคว)">รพ.สวรรค์ประชารักษ์ (จิตเวชสี่แคว)</option><option value="รพ.จิตเวชราชนครินทร์">รพ.จิตเวชราชนครินทร์</option></select></div><div class="mb-3"><label class="form-label">ข้อมูลเพิ่มเติม</label><textarea name="notes" class="form-control" rows="3"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button><button type="submit" class="btn btn-primary">บันทึกนัดหมาย</button></div></form></div></div></div>
+<div class="modal fade" id="editAppointmentModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form id="editAppointmentForm" action="{{ route('mental-health.appointment.update') }}" method="POST">@csrf<div id="edit_appointment_ids_container"></div><div class="modal-header"><h5 class="modal-title">แก้ไขข้อมูลนัดหมาย</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="edit_appointment_patient_list" class="mb-3"></div><p class="text-muted"><small>หมายเหตุ: กรอกเฉพาะช่องที่ต้องการแก้ไข</small></p><div class="mb-3"><label class="form-label">วันที่นัดหมายใหม่</label><input type="date" name="appointment_date" class="form-control" min="{{ date('Y-m-d') }}"></div><div class="mb-3"><label class="form-label">เวลาใหม่</label><input type="time" name="appointment_time" class="form-control"></div><div class="mb-3"><label class="form-label">โรงพยาบาลใหม่</label><select name="appointment_location" class="form-select"><option value="">-- ไม่เปลี่ยนแปลง --</option><option value="รพ.ค่ายจิรประวัติ">รพ.ค่ายจิรประวัติ</option><option value="รพ.สวรรค์ประชารักษ์ (จิตเวชสี่แคว)">รพ.สวรรค์ประชารักษ์ (จิตเวชสี่แคว)</option><option value="รพ.จิตเวชราชนครินทร์">รพ.จิตเวชราชนครินทร์</option></select></div><div class="mb-3"><label class="form-label">ข้อมูลเพิ่มเติม</label><textarea name="notes" class="form-control" rows="3"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button><button type="submit" class="btn btn-info">บันทึกการเปลี่ยนแปลง</button></div></form></div></div></div>
+<div class="modal fade" id="treatmentModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form id="treatmentForm" method="POST">@csrf<input type="hidden" name="appointment_id" id="treatment_appointment_id"><div class="modal-header"><h5 class="modal-title">บันทึกผลการรักษาและปิดเคส</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="close_case_patient_list" class="mb-3"></div><div class="mb-3"><label class="form-label">แพทย์ผู้รักษา <span class="text-danger">*</span></label><input type="text" name="doctor_name" class="form-control" required placeholder="ระบุชื่อแพทย์"></div><div class="mb-3"><label class="form-label">ยาที่รักษา</label><textarea name="medicine_name" class="form-control" rows="3" placeholder="ระบุยาที่ใช้รักษา..."></textarea></div><div class="mb-3"><label class="form-label">ข้อมูลเพิ่มเติม</label><textarea name="notes" class="form-control" rows="3" placeholder="เช่น การวินิจฉัย, แผนการรักษา..."></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button><button type="submit" class="btn btn-success">บันทึกและปิดเคส</button></div></form></div></div></div>
+<div class="modal fade" id="bulkCloseFormModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><form id="bulkCloseForm" action="{{ route('mental-health.case.bulk-close') }}" method="POST">@csrf<div id="bulk_close_ids_container"></div><div class="modal-header"><h5 class="modal-title">บันทึกและปิดเคสที่เลือก</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="bulk_close_patient_list" class="mb-3"></div><div class="mb-3"><label class="form-label">แพทย์ผู้รักษา <span class="text-danger">*</span></label><input type="text" name="doctor_name" class="form-control" required placeholder="ระบุชื่อแพทย์ (สำหรับทุกเคสที่เลือก)"></div><div class="mb-3"><label class="form-label">ยาที่รักษา</label><textarea name="medicine_name" class="form-control" rows="3"></textarea></div><div class="mb-3"><label class="form-label">ข้อมูลเพิ่มเติม</label><textarea name="notes" class="form-control" rows="3"></textarea></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button><button type="submit" class="btn btn-warning">ยืนยันและปิดเคสทั้งหมด</button></div></form></div></div></div>
+<div class="modal fade" id="viewAppointmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewAppointmentModalLabel"><i class="fas fa-calendar-alt me-2"></i>รายละเอียดนัดหมาย</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">ทหาร</dt>
+                    <dd class="col-sm-8" id="view_patient_name"></dd>
+
+                    <dt class="col-sm-4">วันที่นัด</dt>
+                    <dd class="col-sm-8" id="view_appointment_date"></dd>
+
+                    <dt class="col-sm-4">เวลา</dt>
+                    <dd class="col-sm-8" id="view_appointment_time"></dd>
+
+                    <dt class="col-sm-4">สถานที่</dt>
+                    <dd class="col-sm-8" id="view_appointment_location"></dd>
+
+                    <dt class="col-sm-4">หมายเหตุ</dt>
+                    <dd class="col-sm-8" id="view_appointment_notes"></dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    let activeRow = null;
+
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
     const soldierCheckboxes = document.querySelectorAll('.soldier-checkbox');
     const bulkSendButton = document.getElementById('bulkSendButton');
     const bulkEditAppointmentButton = document.getElementById('bulkEditAppointmentButton');
     const bulkCloseButton = document.getElementById('bulkCloseButton');
+
     function updateBulkButtonsState() {
         const selectedCheckboxes = document.querySelectorAll('.soldier-checkbox:checked');
         const count = selectedCheckboxes.length;
@@ -291,13 +336,16 @@ document.addEventListener('DOMContentLoaded', function () {
         bulkEditAppointmentButton.disabled = !allScheduled;
         bulkCloseButton.disabled = !allScheduled;
     }
+
     if(selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', () => {
             soldierCheckboxes.forEach(checkbox => checkbox.checked = selectAllCheckbox.checked);
             updateBulkButtonsState();
         });
     }
+
     soldierCheckboxes.forEach(checkbox => checkbox.addEventListener('change', updateBulkButtonsState));
+
     const downloadForm = document.getElementById('mainDashboardForm');
     const selectedIdsInput = document.getElementById('selected_ids');
     if (downloadForm) {
@@ -315,62 +363,110 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    function createPatientListHtml(names) {
+        if (names.length === 0) return '';
+        if (names.length <= 5) {
+            return `<p class="mb-0"><strong>รายชื่อ:</strong> ${names.join(', ')}</p>`;
+        }
+        return `<p><strong>รายชื่อ:</strong> ${names.slice(0, 5).join(', ')} และอีก ${names.length - 5} คน</p>`;
+    }
+
     document.body.addEventListener('click', function(event) {
-        const actionTrigger = event.target.closest('.action-modal-trigger, .refer-btn, #bulkSendButton, .edit-appointment-btn, #bulkEditAppointmentButton, .close-case-btn, #bulkCloseButton');
+        const actionTrigger = event.target.closest('.action-modal-trigger, .refer-btn, #bulkSendButton, .edit-appointment-btn, #bulkEditAppointmentButton, .close-case-btn, #bulkCloseButton, .view-appointment-btn');
         if (!actionTrigger) return;
+
         if (actionTrigger.matches('.action-modal-trigger')) {
-            const patientName = actionTrigger.dataset.patientName;
+            activeRow = actionTrigger.closest('tr');
+            const patientName = activeRow.dataset.soldierName;
             const template = actionTrigger.parentElement.querySelector('.action-template');
             document.getElementById('actionModalLabel').textContent = `จัดการ: ${patientName}`;
             document.getElementById('actionModalBody').innerHTML = template.innerHTML;
         }
+
         const appointmentModalEl = document.getElementById('appointmentModal');
         if (appointmentModalEl) {
             const appointmentFormContainer = appointmentModalEl.querySelector('#tracking_ids_container');
-            const selectedCountSpan = appointmentModalEl.querySelector('#selected_count');
+            const patientListContainer = appointmentModalEl.querySelector('#appointment_patient_list');
             if (actionTrigger.matches('.refer-btn')) {
                 appointmentFormContainer.innerHTML = `<input type="hidden" name="tracking_ids[]" value="${actionTrigger.dataset.id}">`;
-                selectedCountSpan.textContent = 1;
+                const patientName = activeRow ? activeRow.dataset.soldierName : '';
+                patientListContainer.innerHTML = createPatientListHtml([patientName]);
             } else if (actionTrigger.matches('#bulkSendButton')) {
-                const selectedIds = Array.from(document.querySelectorAll('.soldier-checkbox:checked')).map(cb => cb.value);
+                const selectedRows = Array.from(document.querySelectorAll('.soldier-checkbox:checked'));
+                const selectedIds = selectedRows.map(cb => cb.value);
+                const selectedNames = selectedRows.map(cb => cb.closest('tr').dataset.soldierName);
                 if (selectedIds.length > 0) {
                     appointmentFormContainer.innerHTML = selectedIds.map(id => `<input type="hidden" name="tracking_ids[]" value="${id}">`).join('');
-                    selectedCountSpan.textContent = selectedIds.length;
+                    patientListContainer.innerHTML = createPatientListHtml(selectedNames);
                 }
             }
         }
+
         const editAppointmentModalEl = document.getElementById('editAppointmentModal');
         if (editAppointmentModalEl) {
             const editForm = editAppointmentModalEl.querySelector('#editAppointmentForm');
             const editIdsContainer = editAppointmentModalEl.querySelector('#edit_appointment_ids_container');
+            const patientListContainer = editAppointmentModalEl.querySelector('#edit_appointment_patient_list');
             if (actionTrigger.matches('.edit-appointment-btn')) {
+                const patientName = activeRow ? activeRow.dataset.soldierName : '';
+                patientListContainer.innerHTML = createPatientListHtml([patientName]);
                 editIdsContainer.innerHTML = `<input type="hidden" name="appointment_ids[]" value="${actionTrigger.dataset.appointmentId}">`;
                 editForm.querySelector('[name="appointment_date"]').value = actionTrigger.dataset.date;
                 editForm.querySelector('[name="appointment_time"]').value = actionTrigger.dataset.time;
                 editForm.querySelector('[name="appointment_location"]').value = actionTrigger.dataset.location;
                 editForm.querySelector('[name="notes"]').value = actionTrigger.dataset.notes;
             } else if (actionTrigger.matches('#bulkEditAppointmentButton')) {
-                const selectedAppointmentIds = Array.from(document.querySelectorAll('.soldier-checkbox:checked')).map(cb => cb.closest('tr').getAttribute('data-appointment-id')).filter(id => id);
+                const selectedRows = Array.from(document.querySelectorAll('.soldier-checkbox:checked'));
+                const selectedAppointmentIds = selectedRows.map(cb => cb.closest('tr').getAttribute('data-appointment-id')).filter(id => id);
+                const selectedNames = selectedRows.map(cb => cb.closest('tr').dataset.soldierName);
                 if (selectedAppointmentIds.length > 0) {
                     editIdsContainer.innerHTML = selectedAppointmentIds.map(id => `<input type="hidden" name="appointment_ids[]" value="${id}">`).join('');
+                    patientListContainer.innerHTML = createPatientListHtml(selectedNames);
                     editForm.reset();
                 }
             }
         }
+
         const treatmentModalEl = document.getElementById('treatmentModal');
         if (treatmentModalEl && actionTrigger.matches('.close-case-btn')) {
+            const patientName = activeRow ? activeRow.dataset.soldierName : '';
+            treatmentModalEl.querySelector('#close_case_patient_list').innerHTML = createPatientListHtml([patientName]);
             treatmentModalEl.querySelector('#treatmentForm').action = `{{ url('mental-health/close-case') }}/${actionTrigger.getAttribute('data-tracking-id')}`;
             treatmentModalEl.querySelector('#treatment_appointment_id').value = actionTrigger.getAttribute('data-appointment-id');
         }
+
         const bulkCloseModalEl = document.getElementById('bulkCloseFormModal');
         if(bulkCloseModalEl && actionTrigger.matches('#bulkCloseButton')) {
-            const selectedIds = Array.from(document.querySelectorAll('.soldier-checkbox:checked')).map(cb => cb.value);
+            const selectedRows = Array.from(document.querySelectorAll('.soldier-checkbox:checked'));
+            const selectedIds = selectedRows.map(cb => cb.value);
+            const selectedNames = selectedRows.map(cb => cb.closest('tr').dataset.soldierName);
             if (selectedIds.length > 0) {
                 bulkCloseModalEl.querySelector('#bulk_close_ids_container').innerHTML = selectedIds.map(id => `<input type="hidden" name="ids[]" value="${id}">`).join('');
-                bulkCloseModalEl.querySelector('#bulk_close_count').textContent = selectedIds.length;
+                bulkCloseModalEl.querySelector('#bulk_close_patient_list').innerHTML = createPatientListHtml(selectedNames);
+            }
+        }
+
+        const viewAppointmentModalEl = document.getElementById('viewAppointmentModal');
+        if (viewAppointmentModalEl && actionTrigger.matches('.view-appointment-btn')) {
+            const row = activeRow;
+            if (row) {
+                const dateString = row.dataset.appointmentDate;
+                if (dateString) {
+                    const date = new Date(dateString);
+                    const thaiDate = date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+                    document.getElementById('view_appointment_date').textContent = thaiDate;
+                } else {
+                    document.getElementById('view_appointment_date').textContent = '-';
+                }
+                document.getElementById('view_patient_name').textContent = row.dataset.soldierName || '-';
+                document.getElementById('view_appointment_time').textContent = row.dataset.appointmentTime ? `${row.dataset.appointmentTime} น.` : '-';
+                document.getElementById('view_appointment_location').textContent = row.dataset.appointmentLocation || '-';
+                document.getElementById('view_appointment_notes').textContent = row.dataset.appointmentNotes || '-';
             }
         }
     });
+
     updateBulkButtonsState();
 });
 </script>

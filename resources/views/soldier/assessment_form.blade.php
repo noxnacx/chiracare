@@ -13,9 +13,7 @@
     <title>{{ $assessmentTitles[$type] ?? 'แบบประเมิน' }}</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -77,7 +75,7 @@
                 </a>
             </div>
             <div class="flex-grow-1 p-3">
-                 <ul class="nav flex-column">
+                <ul class="nav flex-column">
                     <li class="nav-item"><a href="{{ route('profile.inv.soldier', ['id' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-user-circle"></i><p class="ms-2">หน้าแรก (โปรไฟล์)</p></a></li>
                     <li class="nav-item"><a href="{{ route('soldier.dashboard', ['id' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-tachometer-alt"></i><p class="ms-2">Dashboard</p></a></li>
                     <li class="nav-item"><a href="{{ route('soldier.view_assessment', ['id' => $soldier->id]) }}" class="nav-link active"><i class="nav-icon fas fa-clipboard-list"></i><p class="ms-2">ทำแบบประเมิน</p></a></li>
@@ -86,7 +84,7 @@
                     <li class="nav-item"><a href="{{ route('soldier.my_appointments', ['id' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-calendar-check"></i><p class="ms-2">นัดหมายของฉัน</p></a></li>
                     @endif
                     <li class="nav-item"><a href="{{ route('soldier.edit_personal_info', ['id' => $soldier->id]) }}" class="nav-link"><i class="nav-icon fas fa-user-edit"></i><p class="ms-2">แก้ไขข้อมูลส่วนตัว</p></a></li>
-                 </ul>
+                </ul>
             </div>
             <div class="p-3 border-top h-auto mt-auto">
                 <a href="{{ route('soldier.logout') }}" class="nav-link text-danger" onclick="event.preventDefault(); document.getElementById('logout-form').submit();"><i class="nav-icon fas fa-sign-out-alt"></i><p class="ms-2">ออกจากระบบ</p></a>
@@ -133,7 +131,7 @@
 
                 </div>
             </div>
-            </div>
+        </div>
     </div>
 
     <form id="logout-form" action="{{ route('soldier.logout') }}" method="POST" class="d-none">@csrf</form>
@@ -217,7 +215,9 @@
 
         function setAssessmentStatus(status) {
             // status: 0=No, 1=Yes, 2=Used to but quit
-            if (status === 0 || status === 2) {
+            // If status is 0 (No), skip the assessment.
+            // If status is 1 (Yes) or 2 (Used to but quit), show the assessment.
+            if (status === 0) {
                 const skipUrl = `{{ url('/assessment') }}/${soldierId}/${currentType}/skip?status=${status}`;
                 window.location.href = skipUrl;
             } else {
